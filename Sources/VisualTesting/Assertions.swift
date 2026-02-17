@@ -60,8 +60,8 @@ public enum VisualTesting {
                         ),
                         named: snapshotName,
                         snapshotDirectory: dir,
-                        testName: stateName,
                         file: file,
+                        testName: stateName,
                         line: line
                     )
                     if let message = failure {
@@ -124,8 +124,8 @@ public enum VisualTesting {
                 ),
                 named: snapshotName,
                 snapshotDirectory: dir,
-                testName: stateName,
                 file: file,
+                testName: stateName,
                 line: line
             )
             if let message = failure {
