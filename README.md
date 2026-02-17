@@ -1,8 +1,6 @@
 # VisualTesting
 
-[English](README_EN.md) | 日本語
-
-SwiftUI向けのスナップショットテストライブラリ。デバイス × テーマ × ロケールのマトリクスで自動的にスナップショットを生成し、View名ベースの階層ディレクトリにリファレンス画像を配置します。
+SwiftUI向けのスナップショットテストライブラリ。宣言的マクロでボイラープレートを排除し、デバイス × テーマ × ロケールのマトリクスで自動的にスナップショットを生成します。
 
 ![Swift 6.2+](https://img.shields.io/badge/Swift-6.2+-orange.svg)
 ![iOS 17+](https://img.shields.io/badge/iOS-17+-blue.svg)
@@ -11,12 +9,12 @@ SwiftUI向けのスナップショットテストライブラリ。デバイス 
 
 ## 特徴
 
-- **マトリクステスト**: デバイス × テーマ × ロケールの全組み合わせを1関数呼び出しで検証
+- **宣言的マクロ**: `@SnapshotSuite` / `@Snapshot` / `@ComponentSnapshot` で View を返すだけ
+- **マトリクステスト**: デバイス × テーマ × ロケールの全組み合わせを自動生成
 - **階層的ディレクトリ構造**: `__Snapshots__/{ViewName}/{stateName}.{device}_{theme}_{locale}.png` で自動整理
 - **テーマシステム統合**: `ThemeApplicable` プロトコルで任意のテーマシステムと接続
 - **View / Component 分離**: View は全軸マトリクス、コンポーネントはテーマ軸のみでテスト
 - **Swift Testing 対応**: `@Suite` / `@Test` との統合、`Issue.record` でのエラー報告
-- **宣言的マクロ** (実験的): `@SnapshotSuite` / `@Snapshot` / `@ComponentSnapshot` でボイラープレート削減
 
 ## クイックスタート
 
@@ -25,32 +23,26 @@ import SwiftUI
 import Testing
 import VisualTesting
 
-@Suite("SettingsView Snapshots")
+@SnapshotSuite("SettingsView")
 @MainActor
 struct SettingsViewSnapshots {
     init() { setupVisualTesting() }
 
-    @Test("loaded")
-    func loaded() {
-        VisualTesting.assertViewSnapshot(
-            of: SettingsView(),
-            viewName: "SettingsView", stateName: "loaded",
-            inNavigation: false, disableAnimations: true,
-            file: #filePath, line: #line)
+    @Snapshot
+    func loaded() -> some View {
+        SettingsView()
     }
 
-    @Test("editing")
-    func editing() {
-        VisualTesting.assertViewSnapshot(
-            of: SettingsView(isEditing: true),
-            viewName: "SettingsView", stateName: "editing",
-            inNavigation: true, disableAnimations: true,
-            file: #filePath, line: #line)
+    @Snapshot
+    @InNavigation
+    @WithoutAnimation
+    func editing() -> some View {
+        SettingsView(isEditing: true)
     }
 }
 ```
 
-この2つの `@Test` で、以下のリファレンス画像が自動生成されます：
+この2つの関数から、以下のリファレンス画像が自動生成されます：
 
 ```
 __Snapshots__/
@@ -75,7 +67,7 @@ __Snapshots__/
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/no-problem-dev/swift-visual-testing.git", from: "1.0.0")
+    .package(url: "https://github.com/no-problem-dev/swift-visual-testing.git", from: "1.1.0")
 ]
 ```
 
@@ -94,16 +86,24 @@ dependencies: [
 
 ### View スナップショット
 
-画面全体の View を、デバイス × テーマ × ロケールの全組み合わせでキャプチャします。
+`@SnapshotSuite` と `@Snapshot` で画面全体の View をキャプチャします。関数は View を返すだけ。viewName / stateName はマクロが自動的に解決します。
 
 ```swift
-VisualTesting.assertViewSnapshot(
-    of: MyView(),
-    viewName: "MyView",        // ディレクトリ名
-    stateName: "loaded",       // ファイル名のプレフィックス
-    inNavigation: false,       // NavigationStack でラップするか
-    disableAnimations: true,   // アニメーション無効化
-    file: #filePath, line: #line)
+@SnapshotSuite("MyView")
+@MainActor
+struct MyViewSnapshots {
+    init() { setupVisualTesting() }
+
+    @Snapshot
+    func loaded() -> some View {
+        MyView(state: .loaded)
+    }
+
+    @Snapshot
+    func empty() -> some View {
+        MyView(state: .empty)
+    }
+}
 ```
 
 **出力**: `__Snapshots__/MyView/loaded.{device}_{theme}_{locale}.png`
@@ -112,19 +112,52 @@ VisualTesting.assertViewSnapshot(
 
 ### コンポーネントスナップショット
 
-UIコンポーネント（ボタン、カードなど）を固定サイズでキャプチャします。テーマ軸のみ。
+`@ComponentSnapshot` でUIコンポーネント（ボタン、カードなど）を固定サイズでキャプチャします。テーマ軸のみ。
 
 ```swift
-VisualTesting.assertComponentSnapshot(
-    of: Card(elevation: .level1) { Text("Card") }
-        .frame(width: 300, height: 80).padding(),
-    componentName: "Card",     // ディレクトリ名
-    stateName: "level1",       // ファイル名のプレフィックス
-    size: CGSize(width: 340, height: 120),
-    file: #filePath, line: #line)
+@SnapshotSuite("Card")
+@MainActor
+struct CardSnapshots {
+    init() { setupVisualTesting() }
+
+    @ComponentSnapshot(width: 340, height: 120)
+    func level1() -> some View {
+        Card(elevation: .level1) { Text("Card") }
+            .frame(width: 300, height: 80).padding()
+    }
+
+    @ComponentSnapshot(width: 340, height: 120)
+    func level2() -> some View {
+        Card(elevation: .level2) { Text("Card") }
+            .frame(width: 300, height: 80).padding()
+    }
+}
 ```
 
 **出力**: `__Snapshots__/Card/level1.light.png`, `__Snapshots__/Card/level1.dark.png`
+
+### 属性マクロ
+
+テスト関数に属性マクロを付与して振る舞いをカスタマイズします。
+
+```swift
+@Snapshot
+@InNavigation        // NavigationStack でラップ
+@WithoutAnimation    // アニメーション無効化
+func detail() -> some View {
+    DetailView()
+}
+```
+
+### マクロ一覧
+
+| マクロ | 種類 | 役割 |
+|--------|------|------|
+| `@SnapshotSuite("ViewName")` | MemberMacro | 子関数を探索し `@Test` メソッドを自動生成 |
+| `@Snapshot` | PeerMacro | View スナップショット対象のマーカー |
+| `@ComponentSnapshot(width:height:)` | PeerMacro | コンポーネント対象のマーカー（サイズ指定） |
+| `@InNavigation` | PeerMacro | `NavigationStack` ラップを指定 |
+| `@WithoutAnimation` | PeerMacro | アニメーション無効化を指定 |
 
 ### テーマシステムの統合
 
@@ -154,10 +187,9 @@ func setupVisualTesting() {
 
 ### 設定のカスタマイズ
 
-デフォルト設定を変更する場合は `SnapshotConfiguration` を渡します。
+デフォルトのマトリクス構成を変更する場合は `SnapshotConfiguration` を使用します。直接 API を呼び出す場合に `configuration` パラメータとして渡します。
 
 ```swift
-// iPhone16 のみ、ダークモードのみ、英語のみ
 let config = SnapshotConfiguration(
     devices: [.iPhone16],
     themes: [.dark],
@@ -165,13 +197,6 @@ let config = SnapshotConfiguration(
     precision: 0.99,
     perceptualPrecision: 0.98
 )
-
-VisualTesting.assertViewSnapshot(
-    of: MyView(),
-    viewName: "MyView", stateName: "dark",
-    inNavigation: false, disableAnimations: true,
-    configuration: config,
-    file: #filePath, line: #line)
 ```
 
 ### リファレンス画像の記録
@@ -183,48 +208,56 @@ VisualTesting.assertViewSnapshot(
 SNAPSHOT_TESTING_RECORD=all swift test
 ```
 
-## マクロ
+## 直接 API
 
-`@SnapshotSuite` が子関数の `@Snapshot` / `@ComponentSnapshot` を探索し、`@Test` メソッドを自動生成します。
-内部的にはネスト `@Suite` struct パターンを使用し、Swift Testing の `@Test` マクロとの互換性を確保しています。
+マクロを使わず、より細かい制御が必要な場合は直接 API を使用できます。
+
+### View スナップショット
 
 ```swift
-@SnapshotSuite("MyView")
+@Suite("MyView Snapshots")
 @MainActor
 struct MyViewSnapshots {
     init() { setupVisualTesting() }
 
-    @Snapshot
-    func loaded() -> some View {
-        MyView(state: .loaded)
-    }
-
-    @Snapshot
-    @InNavigation
-    func detail() -> some View {
-        MyDetailView()
-    }
-
-    @ComponentSnapshot(width: 200, height: 60)
-    func chip() -> some View {
-        Chip("Label").padding()
+    @Test("loaded")
+    func loaded() {
+        VisualTesting.assertViewSnapshot(
+            of: MyView(),
+            viewName: "MyView",
+            stateName: "loaded",
+            inNavigation: false,
+            disableAnimations: true,
+            file: #filePath, line: #line)
     }
 }
 ```
 
-### マクロ一覧
+### コンポーネントスナップショット
 
-| マクロ | 種類 | 役割 |
-|--------|------|------|
-| `@SnapshotSuite` | MemberMacro | 子関数を探索し `@Test` メソッドを生成 |
-| `@Snapshot` | PeerMacro | View スナップショット対象のマーカー |
-| `@ComponentSnapshot` | PeerMacro | コンポーネント対象のマーカー（サイズ指定可） |
-| `@InNavigation` | PeerMacro | `NavigationStack` ラップを指定 |
-| `@WithoutAnimation` | PeerMacro | アニメーション無効化を指定 |
+```swift
+VisualTesting.assertComponentSnapshot(
+    of: Card(elevation: .level1) { Text("Card") }
+        .frame(width: 300, height: 80).padding(),
+    componentName: "Card",
+    stateName: "level1",
+    size: CGSize(width: 340, height: 120),
+    file: #filePath, line: #line)
+```
 
 ## API リファレンス
 
-### VisualTesting
+### マクロ
+
+| マクロ | 説明 |
+|--------|------|
+| `@SnapshotSuite("ViewName")` | struct に付与。子関数の `@Snapshot` / `@ComponentSnapshot` からテストを自動生成 |
+| `@Snapshot` | View スナップショット。デバイス × テーマ × ロケールの全組み合わせ |
+| `@ComponentSnapshot(width:height:)` | コンポーネントスナップショット。テーマ軸のみ |
+| `@InNavigation` | `NavigationStack` でラップ |
+| `@WithoutAnimation` | アニメーション無効化 |
+
+### VisualTesting (直接 API)
 
 | メソッド | 説明 |
 |---------|------|
@@ -273,7 +306,7 @@ public protocol ThemeApplicable: Sendable {
 
 ```
 __Snapshots__/
-  SettingsView/                        ← viewName
+  SettingsView/                        ← viewName (@SnapshotSuite の引数)
     loaded.iPhone16_light_en.png       ← stateName.device_theme_locale
     loaded.iPhone16_light_ja.png
     loaded.iPhone16_dark_en.png
@@ -282,7 +315,7 @@ __Snapshots__/
     loaded.iPhoneSE_light_ja.png
     loaded.iPhoneSE_dark_en.png
     loaded.iPhoneSE_dark_ja.png
-    editing.iPhone16_light_en.png      ← 別の stateName
+    editing.iPhone16_light_en.png      ← 別の stateName (関数名)
     ...
 ```
 
@@ -290,7 +323,7 @@ __Snapshots__/
 
 ```
 __Snapshots__/
-  Card/                                ← componentName
+  Card/                                ← componentName (@SnapshotSuite の引数)
     level1.light.png                   ← stateName.theme
     level1.dark.png
     level2.light.png
