@@ -50,5 +50,15 @@ let package = Package(
                 .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
             ]
         ),
+
+        // MARK: - Integration Tests (iOS only)
+        // Verifies that macros generate compilable code (catches issues assertMacroExpansion misses).
+        // Build with: xcodebuild build-for-testing -scheme swift-visual-testing -destination 'platform=iOS Simulator,...'
+        .testTarget(
+            name: "VisualTestingIntegrationTests",
+            dependencies: [
+                "VisualTesting",
+            ]
+        ),
     ]
 )

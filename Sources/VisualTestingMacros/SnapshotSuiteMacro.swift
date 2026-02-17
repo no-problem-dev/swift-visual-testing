@@ -3,7 +3,12 @@ import SwiftSyntaxMacros
 
 /// The core macro that generates `@Test` methods for each `@Snapshot` / `@ComponentSnapshot` function.
 ///
-/// Follows the same pattern as `APIGroupMacro.collectEndpoints()`:
+/// Uses the **nested `@Suite` struct** pattern to work around Swift compiler bug
+/// [swiftlang/swift#78611](https://github.com/swiftlang/swift/issues/78611):
+/// `@Test` methods are placed inside a nested `__VisualTests` struct with its own `@Suite`,
+/// providing complete lexical context for `@Test` macro expansion.
+///
+/// Follows the same collection pattern as `APIGroupMacro.collectEndpoints()`:
 /// iterates struct members, collects annotated functions, and generates test methods.
 public struct SnapshotSuiteMacro: MemberMacro {
 
@@ -13,25 +18,34 @@ public struct SnapshotSuiteMacro: MemberMacro {
         conformingTo protocols: [TypeSyntax],
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
-        guard declaration.is(StructDeclSyntax.self) else {
+        guard let structDecl = declaration.as(StructDeclSyntax.self) else {
             throw VisualTestingMacroError.onlyApplicableToStruct
         }
 
+        let structName = structDecl.name.text
         let viewName = try parseViewName(from: node)
 
         let snapshots = collectSnapshotFunctions(from: declaration)
         let components = collectComponentFunctions(from: declaration)
 
-        var members: [DeclSyntax] = []
-
+        // Build all @Test methods as a single string
+        var testMethods = ""
         for info in snapshots {
-            members.append(generateViewTest(viewName: viewName, info: info))
+            testMethods += generateViewTestMethod(
+                structName: structName, viewName: viewName, info: info)
         }
         for info in components {
-            members.append(generateComponentTest(componentName: viewName, info: info))
+            testMethods += generateComponentTestMethod(
+                structName: structName, componentName: viewName, info: info)
         }
 
-        return members
+        // Wrap in a nested @Suite struct for complete @Test lexical context
+        return ["""
+        @Suite("\(raw: viewName)")
+        @MainActor
+        struct __VisualTests {
+        \(raw: testMethods)}
+        """]
     }
 
     // MARK: - Argument Parsing
@@ -144,24 +158,32 @@ public struct SnapshotSuiteMacro: MemberMacro {
 
     // MARK: - Code Generation
 
-    private static func generateViewTest(viewName: String, info: SnapshotFunctionInfo) -> DeclSyntax {
+    /// Generate a `@Test` method for a view snapshot inside the nested struct.
+    private static func generateViewTestMethod(
+        structName: String, viewName: String, info: SnapshotFunctionInfo
+    ) -> String {
         """
-        @Test("\(raw: info.name)")
-        func _snapshot_\(raw: info.name)() {
-            let _view = \(raw: info.name)()
-            VisualTesting.assertViewSnapshot(
-                of: _view,
-                viewName: "\(raw: viewName)",
-                stateName: "\(raw: info.name)",
-                inNavigation: \(raw: info.inNavigation),
-                disableAnimations: \(raw: info.disableAnimations),
-                file: #filePath, line: #line
-            )
-        }
+            @Test("\(info.name)")
+            func _\(info.name)() {
+                let _outer = \(structName)()
+                let _view = _outer.\(info.name)()
+                VisualTesting.assertViewSnapshot(
+                    of: _view,
+                    viewName: "\(viewName)",
+                    stateName: "\(info.name)",
+                    inNavigation: \(info.inNavigation),
+                    disableAnimations: \(info.disableAnimations),
+                    file: #filePath, line: #line
+                )
+            }
+
         """
     }
 
-    private static func generateComponentTest(componentName: String, info: ComponentFunctionInfo) -> DeclSyntax {
+    /// Generate a `@Test` method for a component snapshot inside the nested struct.
+    private static func generateComponentTestMethod(
+        structName: String, componentName: String, info: ComponentFunctionInfo
+    ) -> String {
         let sizeArg: String
         if let w = info.width, let h = info.height {
             sizeArg = "CGSize(width: \(w), height: \(h))"
@@ -169,19 +191,21 @@ public struct SnapshotSuiteMacro: MemberMacro {
             sizeArg = "nil"
         }
 
-        return DeclSyntax(stringLiteral: """
-        @Test("\(info.name)")
-        func _snapshot_\(info.name)() {
-            let _view = \(info.name)()
-            VisualTesting.assertComponentSnapshot(
-                of: _view,
-                componentName: "\(componentName)",
-                stateName: "\(info.name)",
-                size: \(sizeArg),
-                file: #filePath, line: #line
-            )
-        }
-        """)
+        return """
+            @Test("\(info.name)")
+            func _\(info.name)() {
+                let _outer = \(structName)()
+                let _view = _outer.\(info.name)()
+                VisualTesting.assertComponentSnapshot(
+                    of: _view,
+                    componentName: "\(componentName)",
+                    stateName: "\(info.name)",
+                    size: \(sizeArg),
+                    file: #filePath, line: #line
+                )
+            }
+
+        """
     }
 }
 

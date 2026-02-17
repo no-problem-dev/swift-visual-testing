@@ -183,19 +183,17 @@ VisualTesting.assertViewSnapshot(
 SNAPSHOT_TESTING_RECORD=all swift test
 ```
 
-## マクロ (実験的)
+## マクロ
 
-> **注意**: マクロ API は Swift Testing の `@Test` マクロとの相互作用に既知の制限があります。
-> 現時点ではランタイム API（`assertViewSnapshot` / `assertComponentSnapshot`）の直接使用を推奨します。
-
-### @SnapshotSuite
-
-子関数の `@Snapshot` / `@ComponentSnapshot` を探索し、`@Test` メソッドを生成する `MemberMacro` です。
+`@SnapshotSuite` が子関数の `@Snapshot` / `@ComponentSnapshot` を探索し、`@Test` メソッドを自動生成します。
+内部的にはネスト `@Suite` struct パターンを使用し、Swift Testing の `@Test` マクロとの互換性を確保しています。
 
 ```swift
 @SnapshotSuite("MyView")
 @MainActor
 struct MyViewSnapshots {
+    init() { setupVisualTesting() }
+
     @Snapshot
     func loaded() -> some View {
         MyView(state: .loaded)

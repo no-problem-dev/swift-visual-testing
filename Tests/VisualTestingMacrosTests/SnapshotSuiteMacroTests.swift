@@ -37,17 +37,22 @@ final class SnapshotSuiteMacroTests: XCTestCase {
                     SettingsView()
                 }
 
-                @Test("loaded")
-                func _snapshot_loaded() {
-                    let _view = loaded()
-                    VisualTesting.assertViewSnapshot(
-                        of: _view,
-                        viewName: "SettingsView",
-                        stateName: "loaded",
-                        inNavigation: false,
-                        disableAnimations: false,
-                        file: #filePath, line: #line
-                    )
+                @Suite("SettingsView")
+                @MainActor
+                struct __VisualTests {
+                    @Test("loaded")
+                    func _loaded() {
+                        let _outer = SettingsSnapshots()
+                        let _view = _outer.loaded()
+                        VisualTesting.assertViewSnapshot(
+                            of: _view,
+                            viewName: "SettingsView",
+                            stateName: "loaded",
+                            inNavigation: false,
+                            disableAnimations: false,
+                            file: #filePath, line: #line
+                        )
+                    }
                 }
             }
             """,
@@ -79,17 +84,22 @@ final class SnapshotSuiteMacroTests: XCTestCase {
                     InterestEditView()
                 }
 
-                @Test("withCategories")
-                func _snapshot_withCategories() {
-                    let _view = withCategories()
-                    VisualTesting.assertViewSnapshot(
-                        of: _view,
-                        viewName: "InterestEditView",
-                        stateName: "withCategories",
-                        inNavigation: true,
-                        disableAnimations: false,
-                        file: #filePath, line: #line
-                    )
+                @Suite("InterestEditView")
+                @MainActor
+                struct __VisualTests {
+                    @Test("withCategories")
+                    func _withCategories() {
+                        let _outer = InterestEditSnapshots()
+                        let _view = _outer.withCategories()
+                        VisualTesting.assertViewSnapshot(
+                            of: _view,
+                            viewName: "InterestEditView",
+                            stateName: "withCategories",
+                            inNavigation: true,
+                            disableAnimations: false,
+                            file: #filePath, line: #line
+                        )
+                    }
                 }
             }
             """,
@@ -121,17 +131,22 @@ final class SnapshotSuiteMacroTests: XCTestCase {
                     BreathAnimationView(onComplete: { })
                 }
 
-                @Test("initial")
-                func _snapshot_initial() {
-                    let _view = initial()
-                    VisualTesting.assertViewSnapshot(
-                        of: _view,
-                        viewName: "BreathAnimationView",
-                        stateName: "initial",
-                        inNavigation: false,
-                        disableAnimations: true,
-                        file: #filePath, line: #line
-                    )
+                @Suite("BreathAnimationView")
+                @MainActor
+                struct __VisualTests {
+                    @Test("initial")
+                    func _initial() {
+                        let _outer = BreathAnimationSnapshots()
+                        let _view = _outer.initial()
+                        VisualTesting.assertViewSnapshot(
+                            of: _view,
+                            viewName: "BreathAnimationView",
+                            stateName: "initial",
+                            inNavigation: false,
+                            disableAnimations: true,
+                            file: #filePath, line: #line
+                        )
+                    }
                 }
             }
             """,
@@ -162,16 +177,21 @@ final class SnapshotSuiteMacroTests: XCTestCase {
                     Card(elevation: .level1) { Text("Card") }
                 }
 
-                @Test("level1")
-                func _snapshot_level1() {
-                    let _view = level1()
-                    VisualTesting.assertComponentSnapshot(
-                        of: _view,
-                        componentName: "Card",
-                        stateName: "level1",
-                        size: CGSize(width: 340, height: 120),
-                        file: #filePath, line: #line
-                    )
+                @Suite("Card")
+                @MainActor
+                struct __VisualTests {
+                    @Test("level1")
+                    func _level1() {
+                        let _outer = CardSnapshots()
+                        let _view = _outer.level1()
+                        VisualTesting.assertComponentSnapshot(
+                            of: _view,
+                            componentName: "Card",
+                            stateName: "level1",
+                            size: CGSize(width: 340, height: 120),
+                            file: #filePath, line: #line
+                        )
+                    }
                 }
             }
             """,
@@ -202,16 +222,21 @@ final class SnapshotSuiteMacroTests: XCTestCase {
                     Badge(text: "New")
                 }
 
-                @Test("small")
-                func _snapshot_small() {
-                    let _view = small()
-                    VisualTesting.assertComponentSnapshot(
-                        of: _view,
-                        componentName: "Badge",
-                        stateName: "small",
-                        size: nil,
-                        file: #filePath, line: #line
-                    )
+                @Suite("Badge")
+                @MainActor
+                struct __VisualTests {
+                    @Test("small")
+                    func _small() {
+                        let _outer = BadgeSnapshots()
+                        let _view = _outer.small()
+                        VisualTesting.assertComponentSnapshot(
+                            of: _view,
+                            componentName: "Badge",
+                            stateName: "small",
+                            size: nil,
+                            file: #filePath, line: #line
+                        )
+                    }
                 }
             }
             """,
@@ -258,43 +283,48 @@ final class SnapshotSuiteMacroTests: XCTestCase {
                     SettingsView()
                 }
 
-                @Test("loaded")
-                func _snapshot_loaded() {
-                    let _view = loaded()
-                    VisualTesting.assertViewSnapshot(
-                        of: _view,
-                        viewName: "SettingsView",
-                        stateName: "loaded",
-                        inNavigation: false,
-                        disableAnimations: false,
-                        file: #filePath, line: #line
-                    )
-                }
-
-                @Test("loading")
-                func _snapshot_loading() {
-                    let _view = loading()
-                    VisualTesting.assertViewSnapshot(
-                        of: _view,
-                        viewName: "SettingsView",
-                        stateName: "loading",
-                        inNavigation: false,
-                        disableAnimations: false,
-                        file: #filePath, line: #line
-                    )
-                }
-
-                @Test("error")
-                func _snapshot_error() {
-                    let _view = error()
-                    VisualTesting.assertViewSnapshot(
-                        of: _view,
-                        viewName: "SettingsView",
-                        stateName: "error",
-                        inNavigation: false,
-                        disableAnimations: false,
-                        file: #filePath, line: #line
-                    )
+                @Suite("SettingsView")
+                @MainActor
+                struct __VisualTests {
+                    @Test("loaded")
+                    func _loaded() {
+                        let _outer = SettingsSnapshots()
+                        let _view = _outer.loaded()
+                        VisualTesting.assertViewSnapshot(
+                            of: _view,
+                            viewName: "SettingsView",
+                            stateName: "loaded",
+                            inNavigation: false,
+                            disableAnimations: false,
+                            file: #filePath, line: #line
+                        )
+                    }
+                    @Test("loading")
+                    func _loading() {
+                        let _outer = SettingsSnapshots()
+                        let _view = _outer.loading()
+                        VisualTesting.assertViewSnapshot(
+                            of: _view,
+                            viewName: "SettingsView",
+                            stateName: "loading",
+                            inNavigation: false,
+                            disableAnimations: false,
+                            file: #filePath, line: #line
+                        )
+                    }
+                    @Test("error")
+                    func _error() {
+                        let _outer = SettingsSnapshots()
+                        let _view = _outer.error()
+                        VisualTesting.assertViewSnapshot(
+                            of: _view,
+                            viewName: "SettingsView",
+                            stateName: "error",
+                            inNavigation: false,
+                            disableAnimations: false,
+                            file: #filePath, line: #line
+                        )
+                    }
                 }
             }
             """,
@@ -333,29 +363,34 @@ final class SnapshotSuiteMacroTests: XCTestCase {
                     MyWidget()
                 }
 
-                @Test("fullScreen")
-                func _snapshot_fullScreen() {
-                    let _view = fullScreen()
-                    VisualTesting.assertViewSnapshot(
-                        of: _view,
-                        viewName: "MyView",
-                        stateName: "fullScreen",
-                        inNavigation: false,
-                        disableAnimations: false,
-                        file: #filePath, line: #line
-                    )
-                }
-
-                @Test("widget")
-                func _snapshot_widget() {
-                    let _view = widget()
-                    VisualTesting.assertComponentSnapshot(
-                        of: _view,
-                        componentName: "MyView",
-                        stateName: "widget",
-                        size: CGSize(width: 200, height: 100),
-                        file: #filePath, line: #line
-                    )
+                @Suite("MyView")
+                @MainActor
+                struct __VisualTests {
+                    @Test("fullScreen")
+                    func _fullScreen() {
+                        let _outer = MyViewSnapshots()
+                        let _view = _outer.fullScreen()
+                        VisualTesting.assertViewSnapshot(
+                            of: _view,
+                            viewName: "MyView",
+                            stateName: "fullScreen",
+                            inNavigation: false,
+                            disableAnimations: false,
+                            file: #filePath, line: #line
+                        )
+                    }
+                    @Test("widget")
+                    func _widget() {
+                        let _outer = MyViewSnapshots()
+                        let _view = _outer.widget()
+                        VisualTesting.assertComponentSnapshot(
+                            of: _view,
+                            componentName: "MyView",
+                            stateName: "widget",
+                            size: CGSize(width: 200, height: 100),
+                            file: #filePath, line: #line
+                        )
+                    }
                 }
             }
             """,
@@ -434,17 +469,22 @@ final class SnapshotSuiteMacroTests: XCTestCase {
                     OnboardingView()
                 }
 
-                @Test("welcome")
-                func _snapshot_welcome() {
-                    let _view = welcome()
-                    VisualTesting.assertViewSnapshot(
-                        of: _view,
-                        viewName: "OnboardingView",
-                        stateName: "welcome",
-                        inNavigation: true,
-                        disableAnimations: true,
-                        file: #filePath, line: #line
-                    )
+                @Suite("OnboardingView")
+                @MainActor
+                struct __VisualTests {
+                    @Test("welcome")
+                    func _welcome() {
+                        let _outer = OnboardingSnapshots()
+                        let _view = _outer.welcome()
+                        VisualTesting.assertViewSnapshot(
+                            of: _view,
+                            viewName: "OnboardingView",
+                            stateName: "welcome",
+                            inNavigation: true,
+                            disableAnimations: true,
+                            file: #filePath, line: #line
+                        )
+                    }
                 }
             }
             """,
