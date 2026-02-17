@@ -66,13 +66,7 @@ public enum VisualTesting {
                     )
                     if let message = failure {
                         Issue.record(
-                            Comment(rawValue: message),
-                            sourceLocation: SourceLocation(
-                                fileID: "\(file)",
-                                filePath: "\(file)",
-                                line: Int(line),
-                                column: 0
-                            )
+                            Comment(rawValue: "\(viewName)/\(stateName).\(snapshotName): \(message)")
                         )
                     }
                 }
@@ -130,13 +124,7 @@ public enum VisualTesting {
             )
             if let message = failure {
                 Issue.record(
-                    Comment(rawValue: message),
-                    sourceLocation: SourceLocation(
-                        fileID: "\(file)",
-                        filePath: "\(file)",
-                        line: Int(line),
-                        column: 0
-                    )
+                    Comment(rawValue: "\(componentName)/\(stateName).\(snapshotName): \(message)")
                 )
             }
         }
