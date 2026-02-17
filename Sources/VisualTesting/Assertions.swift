@@ -17,7 +17,7 @@ public enum VisualTesting {
     /// Assert view snapshots across device x theme x locale matrix.
     ///
     /// Called by generated `@Test` methods from `@SnapshotSuite`.
-    /// Produces files at: `__Snapshots__/{viewName}/{stateName}.{device}_{theme}_{locale}.png`
+    /// Produces files at: `__Snapshots__/{viewName}/{device}/{stateName}.{theme}_{locale}.png`
     @MainActor
     public static func assertViewSnapshot<V: View>(
         of view: V,
@@ -38,9 +38,9 @@ public enum VisualTesting {
             AnyView(view)
         }
 
-        let dir = snapshotDirectory(file: file, viewName: viewName)
-
         for device in configuration.devices {
+            let dir = snapshotDirectory(file: file, viewName: viewName, device: device)
+
             for theme in configuration.themes {
                 for locale in configuration.locales {
                     let vc = makeHostingController(
@@ -49,7 +49,7 @@ public enum VisualTesting {
                         theme: theme,
                         locale: locale
                     )
-                    let snapshotName = "\(device.rawValue)_\(theme.rawValue)_\(locale)"
+                    let snapshotName = "\(theme.rawValue)_\(locale)"
 
                     let failure = verifySnapshot(
                         of: vc,
@@ -66,11 +66,23 @@ public enum VisualTesting {
                     )
                     if let message = failure {
                         Issue.record(
-                            Comment(rawValue: "\(viewName)/\(stateName).\(snapshotName): \(message)")
+                            Comment(rawValue: "\(viewName)/\(device.rawValue)/\(stateName).\(snapshotName): \(message)")
                         )
                     }
                 }
             }
+
+            updateManifest(
+                viewName: viewName,
+                type: .view,
+                stateName: stateName,
+                device: device,
+                themes: configuration.themes,
+                locales: configuration.locales,
+                inNavigation: inNavigation,
+                disableAnimations: disableAnimations,
+                file: file
+            )
         }
     }
 
@@ -128,6 +140,18 @@ public enum VisualTesting {
                 )
             }
         }
+
+        updateManifest(
+            viewName: componentName,
+            type: .component,
+            stateName: stateName,
+            device: nil,
+            themes: configuration.themes,
+            locales: [],
+            inNavigation: false,
+            disableAnimations: false,
+            file: file
+        )
     }
 
     // MARK: - Private Helpers
@@ -151,7 +175,18 @@ public enum VisualTesting {
         return hostingController
     }
 
-    /// Compute snapshot directory: `{testFileDir}/__Snapshots__/{viewName}`
+    /// Compute snapshot directory with device subdirectory: `{testFileDir}/__Snapshots__/{viewName}/{device}`
+    private static func snapshotDirectory(file: StaticString, viewName: String, device: SnapshotDevice) -> String {
+        let fileURL = URL(fileURLWithPath: "\(file)")
+        return fileURL
+            .deletingLastPathComponent()
+            .appendingPathComponent("__Snapshots__")
+            .appendingPathComponent(viewName)
+            .appendingPathComponent(device.rawValue)
+            .path
+    }
+
+    /// Compute snapshot directory without device: `{testFileDir}/__Snapshots__/{viewName}`
     private static func snapshotDirectory(file: StaticString, viewName: String) -> String {
         let fileURL = URL(fileURLWithPath: "\(file)")
         return fileURL

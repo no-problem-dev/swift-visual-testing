@@ -8,6 +8,7 @@ import SnapshotTesting
 public enum SnapshotDevice: String, CaseIterable, Sendable {
     case iPhone16 = "iPhone16"
     case iPhoneSE = "iPhoneSE"
+    case iPadPro11 = "iPadPro11"
 
     public var config: ViewImageConfig {
         switch self {
@@ -24,6 +25,15 @@ public enum SnapshotDevice: String, CaseIterable, Sendable {
             return ViewImageConfig(
                 safeArea: UIEdgeInsets(top: 20, left: 0, bottom: 0, right: 0),
                 size: CGSize(width: 375, height: 667),
+                traits: UITraitCollection(traitsFrom: [
+                    UITraitCollection(userInterfaceStyle: .light),
+                    UITraitCollection(displayScale: 2),
+                ])
+            )
+        case .iPadPro11:
+            return ViewImageConfig(
+                safeArea: UIEdgeInsets(top: 24, left: 0, bottom: 20, right: 0),
+                size: CGSize(width: 834, height: 1194),
                 traits: UITraitCollection(traitsFrom: [
                     UITraitCollection(userInterfaceStyle: .light),
                     UITraitCollection(displayScale: 2),
