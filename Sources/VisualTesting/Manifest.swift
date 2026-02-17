@@ -8,12 +8,23 @@ public struct SnapshotManifest: Codable, Sendable {
     public var type: SnapshotType
     public var generatedAt: String
     public var states: [String: StateManifest]
+    public var basePath: String?
+    public var category: String?
 
-    public init(name: String, type: SnapshotType, generatedAt: String, states: [String: StateManifest]) {
+    public init(
+        name: String,
+        type: SnapshotType,
+        generatedAt: String,
+        states: [String: StateManifest],
+        basePath: String? = nil,
+        category: String? = nil
+    ) {
         self.name = name
         self.type = type
         self.generatedAt = generatedAt
         self.states = states
+        self.basePath = basePath
+        self.category = category
     }
 }
 

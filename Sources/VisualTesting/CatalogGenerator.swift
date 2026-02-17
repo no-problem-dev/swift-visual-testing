@@ -101,7 +101,9 @@ extension VisualTesting {
     ///
     /// - Parameter rootDirectory: The directory containing `__Snapshots__` subdirectories to scan.
     /// - Parameter outputPath: Path to write the catalog JSON file.
-    public static func generateCatalog(rootDirectory: String, outputPath: String) {
+    /// - Returns: The generated `SnapshotCatalog`.
+    @discardableResult
+    public static func generateCatalog(rootDirectory: String, outputPath: String) -> SnapshotCatalog {
         let rootURL = URL(fileURLWithPath: rootDirectory)
         let fm = FileManager.default
 
@@ -119,9 +121,17 @@ extension VisualTesting {
 
         for manifestURL in manifestFiles {
             guard let data = try? Data(contentsOf: manifestURL),
-                  let manifest = try? JSONDecoder().decode(SnapshotManifest.self, from: data) else {
+                  var manifest = try? JSONDecoder().decode(SnapshotManifest.self, from: data) else {
                 continue
             }
+
+            // Compute basePath: relative path from rootDirectory to the manifest's directory
+            let manifestDir = manifestURL.deletingLastPathComponent()
+            manifest.basePath = relativePath(from: rootURL, to: manifestDir)
+
+            // Compute category: directory name just before __Snapshots__
+            // e.g. "Views/Dashboard/__Snapshots__/DashboardView" → "Dashboard"
+            manifest.category = extractCategory(from: manifestDir, root: rootURL)
 
             switch manifest.type {
             case .view:
@@ -171,6 +181,8 @@ extension VisualTesting {
             try? fm.createDirectory(at: outputURL.deletingLastPathComponent(), withIntermediateDirectories: true)
             try? data.write(to: outputURL)
         }
+
+        return catalog
     }
 
     // MARK: - Private Helpers
@@ -197,6 +209,33 @@ extension VisualTesting {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime]
         return formatter.string(from: Date())
+    }
+
+    /// Compute the relative path from `base` to `target`.
+    private static func relativePath(from base: URL, to target: URL) -> String {
+        let basePath = base.standardizedFileURL.path
+        let targetPath = target.standardizedFileURL.path
+        guard targetPath.hasPrefix(basePath) else { return targetPath }
+        var relative = String(targetPath.dropFirst(basePath.count))
+        if relative.hasPrefix("/") {
+            relative = String(relative.dropFirst())
+        }
+        return relative
+    }
+
+    /// Extract the category from a manifest directory path.
+    ///
+    /// Looks for `__Snapshots__` in the path and returns the directory name immediately before it.
+    /// - `Views/Dashboard/__Snapshots__/DashboardView` → `"Dashboard"`
+    /// - `DesignSystem/__Snapshots__/Card` → `nil` (top-level section, not a sub-category)
+    private static func extractCategory(from manifestDir: URL, root: URL) -> String? {
+        let rel = relativePath(from: root, to: manifestDir)
+        let components = rel.split(separator: "/").map(String.init)
+        guard let snapshotsIndex = components.firstIndex(of: "__Snapshots__"),
+              snapshotsIndex >= 2 else {
+            return nil
+        }
+        return components[snapshotsIndex - 1]
     }
 }
 #endif

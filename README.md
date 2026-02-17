@@ -269,7 +269,8 @@ VisualTesting.assertComponentSnapshot(
 |---------|------|
 | `assertViewSnapshot(of:viewName:stateName:inNavigation:disableAnimations:configuration:file:line:)` | View をデバイス × テーマ × ロケールでキャプチャ |
 | `assertComponentSnapshot(of:componentName:stateName:size:configuration:file:line:)` | コンポーネントをテーマ軸のみでキャプチャ |
-| `generateCatalog(rootDirectory:outputPath:)` | 全 manifest.json を集約して `snapshot-catalog.json` を生成 |
+| `generateCatalog(rootDirectory:outputPath:)` | 全 manifest.json を集約して `snapshot-catalog.json` を生成 (戻り値: `SnapshotCatalog`) |
+| `generateGallery(catalog:outputPath:)` | カタログから自己完結型 HTML ギャラリーを生成 |
 | `themeApplicable` | テーマ適用ロジック（カスタマイズ可能） |
 
 ### SnapshotConfiguration
@@ -357,6 +358,31 @@ func generateCatalog() {
     VisualTesting.generateCatalog(rootDirectory: snapshotsRoot, outputPath: outputPath)
 }
 ```
+
+### HTML ギャラリー生成
+
+カタログからブラウザで閲覧可能な HTML ギャラリーを自動生成できます。
+
+```swift
+@Test("Generate snapshot catalog and gallery")
+func generateCatalog() {
+    let snapshotsRoot = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+    let catalogPath = snapshotsRoot.appendingPathComponent("snapshot-catalog.json").path
+    let galleryPath = snapshotsRoot.appendingPathComponent("gallery.html").path
+
+    let catalog = VisualTesting.generateCatalog(rootDirectory: snapshotsRoot.path, outputPath: catalogPath)
+    VisualTesting.generateGallery(catalog: catalog, outputPath: galleryPath)
+}
+```
+
+テスト実行後 `open gallery.html` でブラウザ確認：
+
+- セクション / デバイス / テーマ / ロケール フィルター
+- テキスト検索（View 名でリアルタイムフィルター）
+- Compare モード（light vs dark 横並び）
+- Lightbox（クリック拡大 + ← → キーボードナビゲーション）
+- ギャラリーのダークモード切り替え
+- 画像の lazy loading
 
 ### manifest.json 例
 
