@@ -34,7 +34,7 @@ extension VisualTesting {
     private static func buildHTML(catalogJSON: String, catalog: SnapshotCatalog) -> String {
         let s = catalog.summary
         let deviceCount = catalog.configuration.devices.count
-        """
+        return """
         <!DOCTYPE html>
         <html lang="en">
         <head>
