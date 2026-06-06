@@ -75,11 +75,15 @@ public struct SnapshotSuiteMacro: MemberMacro {
 
     // MARK: - Runner Detection
 
-    /// Whether the struct already declares a hand-written `@Test` function.
+    /// Whether the struct declares a hand-written runner that consumes
+    /// `__snapshotCases`. Checking for any `@Test` is not enough: a suite
+    /// can contain unrelated direct-API tests while the collected cases
+    /// silently never run.
     private static func hasHandwrittenTestRunner(_ declaration: some DeclGroupSyntax) -> Bool {
         for member in declaration.memberBlock.members {
             guard let funcDecl = member.decl.as(FunctionDeclSyntax.self) else { continue }
-            if collectAttributes(from: funcDecl).contains("Test") {
+            if collectAttributes(from: funcDecl).contains("Test"),
+               funcDecl.description.contains("__snapshotCases") {
                 return true
             }
         }

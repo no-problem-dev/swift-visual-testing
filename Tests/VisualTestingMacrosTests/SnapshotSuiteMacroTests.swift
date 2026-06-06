@@ -315,6 +315,62 @@ final class SnapshotSuiteMacroTests: XCTestCase {
         #endif
     }
 
+    func testUnrelatedTestDoesNotCountAsRunner() throws {
+        #if canImport(VisualTestingMacros)
+        assertMacroExpansion(
+            """
+            @SnapshotSuite("SettingsView")
+            struct SettingsSnapshots {
+                @Snapshot
+                func loaded() -> some View {
+                    SettingsView()
+                }
+
+                @Test
+                func unrelatedDirectAPITest() {
+                }
+            }
+            """,
+            expandedSource: """
+            struct SettingsSnapshots {
+                func loaded() -> some View {
+                    SettingsView()
+                }
+
+                @Test
+                func unrelatedDirectAPITest() {
+                }
+
+                nonisolated static var __snapshotCases: [SnapshotCase] {
+                    [
+                        SnapshotCase(
+                            viewName: "SettingsView",
+                            stateName: "loaded",
+                            kind: .view(inNavigation: false, disableAnimations: false),
+                            makeView: {
+                                AnyView(SettingsSnapshots().loaded())
+                            }
+                        )
+                    ]
+                }
+            }
+            """,
+            diagnostics: [
+                DiagnosticSpec(
+                    message: "@SnapshotSuite requires a hand-written runner test. Add to the struct: "
+                        + "@Test func snapshots() { for snapshotCase in Self.__snapshotCases { snapshotCase.run() } }",
+                    line: 1,
+                    column: 1,
+                    severity: .error
+                )
+            ],
+            macros: testMacros
+        )
+        #else
+        throw XCTSkip("macros are only supported when running tests for the host platform")
+        #endif
+    }
+
     func testSnapshotSuiteOnNonStruct() throws {
         #if canImport(VisualTestingMacros)
         assertMacroExpansion(
