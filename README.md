@@ -41,8 +41,17 @@ struct SettingsViewSnapshots {
     func editing() -> some View {
         SettingsView(isEditing: true)
     }
+
+    @Test func snapshots() {
+        for snapshotCase in Self.__snapshotCases { snapshotCase.run() }
+    }
 }
 ```
+
+> **Note**: 各スイートには手書きのランナーテスト（`@Test func snapshots()`）が 1 つ必要です。
+> マクロは `__snapshotCases` の収集のみを行います — `@Test` をマクロ生成すると
+> コンパイラが lexical context を失い、swift-testing のテストレコードが壊れるためです
+> （ランナーが無い場合はコンパイルエラーで正確な追加行を提示します）。
 
 この2つの関数から、以下のリファレンス画像が自動生成されます：
 
@@ -109,6 +118,10 @@ struct MyViewSnapshots {
     func empty() -> some View {
         MyView(state: .empty)
     }
+
+    @Test func snapshots() {
+        for snapshotCase in Self.__snapshotCases { snapshotCase.run() }
+    }
 }
 ```
 
@@ -136,6 +149,10 @@ struct CardSnapshots {
     func level2() -> some View {
         Card(elevation: .level2) { Text("Card") }
             .frame(width: 300, height: 80).padding()
+    }
+
+    @Test func snapshots() {
+        for snapshotCase in Self.__snapshotCases { snapshotCase.run() }
     }
 }
 ```

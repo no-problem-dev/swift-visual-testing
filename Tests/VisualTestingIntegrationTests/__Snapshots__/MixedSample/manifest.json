@@ -1,0 +1,99 @@
+{
+  "generatedAt" : "2026-06-06T05:39:48Z",
+  "name" : "MixedSample",
+  "states" : {
+    "component" : {
+      "disableAnimations" : false,
+      "inNavigation" : false,
+      "snapshots" : [
+        {
+          "file" : "component.light.png",
+          "theme" : "light"
+        },
+        {
+          "file" : "component.dark.png",
+          "theme" : "dark"
+        }
+      ]
+    },
+    "fullScreen" : {
+      "disableAnimations" : false,
+      "inNavigation" : false,
+      "snapshots" : [
+        {
+          "device" : "iPhone16",
+          "file" : "iPhone16\/fullScreen.light_en.png",
+          "locale" : "en",
+          "theme" : "light"
+        },
+        {
+          "device" : "iPhone16",
+          "file" : "iPhone16\/fullScreen.light_ja.png",
+          "locale" : "ja",
+          "theme" : "light"
+        },
+        {
+          "device" : "iPhone16",
+          "file" : "iPhone16\/fullScreen.dark_en.png",
+          "locale" : "en",
+          "theme" : "dark"
+        },
+        {
+          "device" : "iPhone16",
+          "file" : "iPhone16\/fullScreen.dark_ja.png",
+          "locale" : "ja",
+          "theme" : "dark"
+        },
+        {
+          "device" : "iPhoneSE",
+          "file" : "iPhoneSE\/fullScreen.light_en.png",
+          "locale" : "en",
+          "theme" : "light"
+        },
+        {
+          "device" : "iPhoneSE",
+          "file" : "iPhoneSE\/fullScreen.light_ja.png",
+          "locale" : "ja",
+          "theme" : "light"
+        },
+        {
+          "device" : "iPhoneSE",
+          "file" : "iPhoneSE\/fullScreen.dark_en.png",
+          "locale" : "en",
+          "theme" : "dark"
+        },
+        {
+          "device" : "iPhoneSE",
+          "file" : "iPhoneSE\/fullScreen.dark_ja.png",
+          "locale" : "ja",
+          "theme" : "dark"
+        },
+        {
+          "device" : "iPadPro11",
+          "file" : "iPadPro11\/fullScreen.light_en.png",
+          "locale" : "en",
+          "theme" : "light"
+        },
+        {
+          "device" : "iPadPro11",
+          "file" : "iPadPro11\/fullScreen.light_ja.png",
+          "locale" : "ja",
+          "theme" : "light"
+        },
+        {
+          "device" : "iPadPro11",
+          "file" : "iPadPro11\/fullScreen.dark_en.png",
+          "locale" : "en",
+          "theme" : "dark"
+        },
+        {
+          "device" : "iPadPro11",
+          "file" : "iPadPro11\/fullScreen.dark_ja.png",
+          "locale" : "ja",
+          "theme" : "dark"
+        }
+      ]
+    }
+  },
+  "type" : "view"
+}

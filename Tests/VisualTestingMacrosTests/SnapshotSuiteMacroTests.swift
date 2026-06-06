@@ -13,11 +13,20 @@ let testMacros: [String: Macro.Type] = [
     "InNavigation": InNavigationMacro.self,
     "WithoutAnimation": WithoutAnimationMacro.self,
 ]
+
+/// The hand-written runner that suites must contain.
+private let runner = """
+    @Test func snapshots() {
+        for snapshotCase in Self.__snapshotCases {
+            snapshotCase.run()
+        }
+    }
+"""
 #endif
 
 final class SnapshotSuiteMacroTests: XCTestCase {
 
-    // MARK: - Basic @Snapshot
+    // MARK: - View Snapshots
 
     func testBasicSnapshot() throws {
         #if canImport(VisualTestingMacros)
@@ -29,6 +38,8 @@ final class SnapshotSuiteMacroTests: XCTestCase {
                 func loaded() -> some View {
                     SettingsView()
                 }
+
+            \(runner)
             }
             """,
             expandedSource: """
@@ -37,22 +48,19 @@ final class SnapshotSuiteMacroTests: XCTestCase {
                     SettingsView()
                 }
 
-                @Suite("SettingsView")
-                @MainActor
-                struct __VisualTests {
-                    @Test("loaded")
-                    func _loaded() {
-                        let _outer = SettingsSnapshots()
-                        let _view = _outer.loaded()
-                        VisualTesting.assertViewSnapshot(
-                            of: _view,
+            \(runner)
+
+                nonisolated static var __snapshotCases: [SnapshotCase] {
+                    [
+                        SnapshotCase(
                             viewName: "SettingsView",
                             stateName: "loaded",
-                            inNavigation: false,
-                            disableAnimations: false,
-                            file: #filePath, line: #line
+                            kind: .view(inNavigation: false, disableAnimations: false),
+                            makeView: {
+                                AnyView(SettingsSnapshots().loaded())
+                            }
                         )
-                    }
+                    ]
                 }
             }
             """,
@@ -63,90 +71,41 @@ final class SnapshotSuiteMacroTests: XCTestCase {
         #endif
     }
 
-    // MARK: - @InNavigation
-
-    func testSnapshotWithInNavigation() throws {
+    func testSnapshotWithMarkerAttributes() throws {
         #if canImport(VisualTestingMacros)
         assertMacroExpansion(
             """
-            @SnapshotSuite("InterestEditView")
-            struct InterestEditSnapshots {
+            @SnapshotSuite("DetailView")
+            struct DetailSnapshots {
                 @Snapshot
                 @InNavigation
-                func withCategories() -> some View {
-                    InterestEditView()
-                }
-            }
-            """,
-            expandedSource: """
-            struct InterestEditSnapshots {
-                func withCategories() -> some View {
-                    InterestEditView()
-                }
-
-                @Suite("InterestEditView")
-                @MainActor
-                struct __VisualTests {
-                    @Test("withCategories")
-                    func _withCategories() {
-                        let _outer = InterestEditSnapshots()
-                        let _view = _outer.withCategories()
-                        VisualTesting.assertViewSnapshot(
-                            of: _view,
-                            viewName: "InterestEditView",
-                            stateName: "withCategories",
-                            inNavigation: true,
-                            disableAnimations: false,
-                            file: #filePath, line: #line
-                        )
-                    }
-                }
-            }
-            """,
-            macros: testMacros
-        )
-        #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
-        #endif
-    }
-
-    // MARK: - @WithoutAnimation
-
-    func testSnapshotWithoutAnimation() throws {
-        #if canImport(VisualTestingMacros)
-        assertMacroExpansion(
-            """
-            @SnapshotSuite("BreathAnimationView")
-            struct BreathAnimationSnapshots {
-                @Snapshot
                 @WithoutAnimation
-                func initial() -> some View {
-                    BreathAnimationView(onComplete: { })
+                func detail() -> some View {
+                    DetailView()
                 }
+
+            \(runner)
             }
             """,
             expandedSource: """
-            struct BreathAnimationSnapshots {
-                func initial() -> some View {
-                    BreathAnimationView(onComplete: { })
+            struct DetailSnapshots {
+                func detail() -> some View {
+                    DetailView()
                 }
 
-                @Suite("BreathAnimationView")
-                @MainActor
-                struct __VisualTests {
-                    @Test("initial")
-                    func _initial() {
-                        let _outer = BreathAnimationSnapshots()
-                        let _view = _outer.initial()
-                        VisualTesting.assertViewSnapshot(
-                            of: _view,
-                            viewName: "BreathAnimationView",
-                            stateName: "initial",
-                            inNavigation: false,
-                            disableAnimations: true,
-                            file: #filePath, line: #line
+            \(runner)
+
+                nonisolated static var __snapshotCases: [SnapshotCase] {
+                    [
+                        SnapshotCase(
+                            viewName: "DetailView",
+                            stateName: "detail",
+                            kind: .view(inNavigation: true, disableAnimations: true),
+                            makeView: {
+                                AnyView(DetailSnapshots().detail())
+                            }
                         )
-                    }
+                    ]
                 }
             }
             """,
@@ -157,7 +116,7 @@ final class SnapshotSuiteMacroTests: XCTestCase {
         #endif
     }
 
-    // MARK: - @ComponentSnapshot with size
+    // MARK: - Component Snapshots
 
     func testComponentSnapshotWithSize() throws {
         #if canImport(VisualTestingMacros)
@@ -167,31 +126,31 @@ final class SnapshotSuiteMacroTests: XCTestCase {
             struct CardSnapshots {
                 @ComponentSnapshot(width: 340, height: 120)
                 func level1() -> some View {
-                    Card(elevation: .level1) { Text("Card") }
+                    Card()
                 }
+
+            \(runner)
             }
             """,
             expandedSource: """
             struct CardSnapshots {
                 func level1() -> some View {
-                    Card(elevation: .level1) { Text("Card") }
+                    Card()
                 }
 
-                @Suite("Card")
-                @MainActor
-                struct __VisualTests {
-                    @Test("level1")
-                    func _level1() {
-                        let _outer = CardSnapshots()
-                        let _view = _outer.level1()
-                        VisualTesting.assertComponentSnapshot(
-                            of: _view,
-                            componentName: "Card",
+            \(runner)
+
+                nonisolated static var __snapshotCases: [SnapshotCase] {
+                    [
+                        SnapshotCase(
+                            viewName: "Card",
                             stateName: "level1",
-                            size: CGSize(width: 340, height: 120),
-                            file: #filePath, line: #line
+                            kind: .component(width: 340, height: 120),
+                            makeView: {
+                                AnyView(CardSnapshots().level1())
+                            }
                         )
-                    }
+                    ]
                 }
             }
             """,
@@ -201,42 +160,40 @@ final class SnapshotSuiteMacroTests: XCTestCase {
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif
     }
-
-    // MARK: - @ComponentSnapshot without size
 
     func testComponentSnapshotWithoutSize() throws {
         #if canImport(VisualTestingMacros)
         assertMacroExpansion(
             """
-            @SnapshotSuite("Badge")
-            struct BadgeSnapshots {
-                @ComponentSnapshot()
-                func small() -> some View {
-                    Badge(text: "New")
+            @SnapshotSuite("Chip")
+            struct ChipSnapshots {
+                @ComponentSnapshot
+                func basic() -> some View {
+                    Chip()
                 }
+
+            \(runner)
             }
             """,
             expandedSource: """
-            struct BadgeSnapshots {
-                func small() -> some View {
-                    Badge(text: "New")
+            struct ChipSnapshots {
+                func basic() -> some View {
+                    Chip()
                 }
 
-                @Suite("Badge")
-                @MainActor
-                struct __VisualTests {
-                    @Test("small")
-                    func _small() {
-                        let _outer = BadgeSnapshots()
-                        let _view = _outer.small()
-                        VisualTesting.assertComponentSnapshot(
-                            of: _view,
-                            componentName: "Badge",
-                            stateName: "small",
-                            size: nil,
-                            file: #filePath, line: #line
+            \(runner)
+
+                nonisolated static var __snapshotCases: [SnapshotCase] {
+                    [
+                        SnapshotCase(
+                            viewName: "Chip",
+                            stateName: "basic",
+                            kind: .component(width: nil, height: nil),
+                            makeView: {
+                                AnyView(ChipSnapshots().basic())
+                            }
                         )
-                    }
+                    ]
                 }
             }
             """,
@@ -247,9 +204,70 @@ final class SnapshotSuiteMacroTests: XCTestCase {
         #endif
     }
 
-    // MARK: - Multiple functions
+    // MARK: - Mixed
 
-    func testMultipleFunctions() throws {
+    func testMixedSnapshotTypes() throws {
+        #if canImport(VisualTestingMacros)
+        assertMacroExpansion(
+            """
+            @SnapshotSuite("Mixed")
+            struct MixedSnapshots {
+                @Snapshot
+                func full() -> some View {
+                    FullView()
+                }
+
+                @ComponentSnapshot(width: 100, height: 50)
+                func part() -> some View {
+                    PartView()
+                }
+
+            \(runner)
+            }
+            """,
+            expandedSource: """
+            struct MixedSnapshots {
+                func full() -> some View {
+                    FullView()
+                }
+                func part() -> some View {
+                    PartView()
+                }
+
+            \(runner)
+
+                nonisolated static var __snapshotCases: [SnapshotCase] {
+                    [
+                        SnapshotCase(
+                            viewName: "Mixed",
+                            stateName: "full",
+                            kind: .view(inNavigation: false, disableAnimations: false),
+                            makeView: {
+                                AnyView(MixedSnapshots().full())
+                            }
+                        ),
+                        SnapshotCase(
+                            viewName: "Mixed",
+                            stateName: "part",
+                            kind: .component(width: 100, height: 50),
+                            makeView: {
+                                AnyView(MixedSnapshots().part())
+                            }
+                        )
+                    ]
+                }
+            }
+            """,
+            macros: testMacros
+        )
+        #else
+        throw XCTSkip("macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    // MARK: - Diagnostics
+
+    func testMissingRunnerEmitsError() throws {
         #if canImport(VisualTestingMacros)
         assertMacroExpansion(
             """
@@ -259,16 +277,6 @@ final class SnapshotSuiteMacroTests: XCTestCase {
                 func loaded() -> some View {
                     SettingsView()
                 }
-
-                @Snapshot
-                func loading() -> some View {
-                    SettingsView()
-                }
-
-                @Snapshot
-                func error() -> some View {
-                    SettingsView()
-                }
             }
             """,
             expandedSource: """
@@ -276,147 +284,55 @@ final class SnapshotSuiteMacroTests: XCTestCase {
                 func loaded() -> some View {
                     SettingsView()
                 }
-                func loading() -> some View {
-                    SettingsView()
-                }
-                func error() -> some View {
-                    SettingsView()
-                }
 
-                @Suite("SettingsView")
-                @MainActor
-                struct __VisualTests {
-                    @Test("loaded")
-                    func _loaded() {
-                        let _outer = SettingsSnapshots()
-                        let _view = _outer.loaded()
-                        VisualTesting.assertViewSnapshot(
-                            of: _view,
+                nonisolated static var __snapshotCases: [SnapshotCase] {
+                    [
+                        SnapshotCase(
                             viewName: "SettingsView",
                             stateName: "loaded",
-                            inNavigation: false,
-                            disableAnimations: false,
-                            file: #filePath, line: #line
+                            kind: .view(inNavigation: false, disableAnimations: false),
+                            makeView: {
+                                AnyView(SettingsSnapshots().loaded())
+                            }
                         )
-                    }
-                    @Test("loading")
-                    func _loading() {
-                        let _outer = SettingsSnapshots()
-                        let _view = _outer.loading()
-                        VisualTesting.assertViewSnapshot(
-                            of: _view,
-                            viewName: "SettingsView",
-                            stateName: "loading",
-                            inNavigation: false,
-                            disableAnimations: false,
-                            file: #filePath, line: #line
-                        )
-                    }
-                    @Test("error")
-                    func _error() {
-                        let _outer = SettingsSnapshots()
-                        let _view = _outer.error()
-                        VisualTesting.assertViewSnapshot(
-                            of: _view,
-                            viewName: "SettingsView",
-                            stateName: "error",
-                            inNavigation: false,
-                            disableAnimations: false,
-                            file: #filePath, line: #line
-                        )
-                    }
+                    ]
                 }
             }
             """,
+            diagnostics: [
+                DiagnosticSpec(
+                    message: "@SnapshotSuite requires a hand-written runner test. Add to the struct: "
+                        + "@Test func snapshots() { for snapshotCase in Self.__snapshotCases { snapshotCase.run() } }",
+                    line: 1,
+                    column: 1,
+                    severity: .error
+                )
+            ],
             macros: testMacros
         )
         #else
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif
     }
-
-    // MARK: - Mixed @Snapshot and @ComponentSnapshot
-
-    func testMixedSnapshotTypes() throws {
-        #if canImport(VisualTestingMacros)
-        assertMacroExpansion(
-            """
-            @SnapshotSuite("MyView")
-            struct MyViewSnapshots {
-                @Snapshot
-                func fullScreen() -> some View {
-                    MyView()
-                }
-
-                @ComponentSnapshot(width: 200, height: 100)
-                func widget() -> some View {
-                    MyWidget()
-                }
-            }
-            """,
-            expandedSource: """
-            struct MyViewSnapshots {
-                func fullScreen() -> some View {
-                    MyView()
-                }
-                func widget() -> some View {
-                    MyWidget()
-                }
-
-                @Suite("MyView")
-                @MainActor
-                struct __VisualTests {
-                    @Test("fullScreen")
-                    func _fullScreen() {
-                        let _outer = MyViewSnapshots()
-                        let _view = _outer.fullScreen()
-                        VisualTesting.assertViewSnapshot(
-                            of: _view,
-                            viewName: "MyView",
-                            stateName: "fullScreen",
-                            inNavigation: false,
-                            disableAnimations: false,
-                            file: #filePath, line: #line
-                        )
-                    }
-                    @Test("widget")
-                    func _widget() {
-                        let _outer = MyViewSnapshots()
-                        let _view = _outer.widget()
-                        VisualTesting.assertComponentSnapshot(
-                            of: _view,
-                            componentName: "MyView",
-                            stateName: "widget",
-                            size: CGSize(width: 200, height: 100),
-                            file: #filePath, line: #line
-                        )
-                    }
-                }
-            }
-            """,
-            macros: testMacros
-        )
-        #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
-        #endif
-    }
-
-    // MARK: - Error: Applied to non-struct
 
     func testSnapshotSuiteOnNonStruct() throws {
         #if canImport(VisualTestingMacros)
         assertMacroExpansion(
             """
-            @SnapshotSuite("MyView")
-            class NotAStruct {
+            @SnapshotSuite("Bad")
+            class BadSnapshots {
             }
             """,
             expandedSource: """
-            class NotAStruct {
+            class BadSnapshots {
             }
             """,
             diagnostics: [
-                DiagnosticSpec(message: "@SnapshotSuite can only be applied to structs", line: 1, column: 1)
+                DiagnosticSpec(
+                    message: "@SnapshotSuite can only be applied to structs",
+                    line: 1,
+                    column: 1
+                )
             ],
             macros: testMacros
         )
@@ -424,70 +340,32 @@ final class SnapshotSuiteMacroTests: XCTestCase {
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif
     }
-
-    // MARK: - Error: @Snapshot on non-function
 
     func testSnapshotOnNonFunction() throws {
         #if canImport(VisualTestingMacros)
         assertMacroExpansion(
             """
-            @Snapshot
-            var notAFunction = 42
+            struct Bad {
+                @Snapshot
+                var view: some View {
+                    Text("bad")
+                }
+            }
             """,
             expandedSource: """
-            var notAFunction = 42
+            struct Bad {
+                var view: some View {
+                    Text("bad")
+                }
+            }
             """,
             diagnostics: [
-                DiagnosticSpec(message: "@Snapshot and @ComponentSnapshot can only be applied to functions", line: 1, column: 1)
+                DiagnosticSpec(
+                    message: "@Snapshot and @ComponentSnapshot can only be applied to functions",
+                    line: 2,
+                    column: 5
+                )
             ],
-            macros: testMacros
-        )
-        #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
-        #endif
-    }
-
-    // MARK: - @InNavigation + @WithoutAnimation combined
-
-    func testAllAttributesCombined() throws {
-        #if canImport(VisualTestingMacros)
-        assertMacroExpansion(
-            """
-            @SnapshotSuite("OnboardingView")
-            struct OnboardingSnapshots {
-                @Snapshot
-                @InNavigation
-                @WithoutAnimation
-                func welcome() -> some View {
-                    OnboardingView()
-                }
-            }
-            """,
-            expandedSource: """
-            struct OnboardingSnapshots {
-                func welcome() -> some View {
-                    OnboardingView()
-                }
-
-                @Suite("OnboardingView")
-                @MainActor
-                struct __VisualTests {
-                    @Test("welcome")
-                    func _welcome() {
-                        let _outer = OnboardingSnapshots()
-                        let _view = _outer.welcome()
-                        VisualTesting.assertViewSnapshot(
-                            of: _view,
-                            viewName: "OnboardingView",
-                            stateName: "welcome",
-                            inNavigation: true,
-                            disableAnimations: true,
-                            file: #filePath, line: #line
-                        )
-                    }
-                }
-            }
-            """,
             macros: testMacros
         )
         #else

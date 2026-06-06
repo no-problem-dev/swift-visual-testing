@@ -2,7 +2,10 @@ import CoreGraphics
 
 /// Defines a snapshot test suite for a view or component.
 ///
-/// Scans child functions for `@Snapshot` / `@ComponentSnapshot` and generates `@Test` methods.
+/// Scans child functions for `@Snapshot` / `@ComponentSnapshot` and collects
+/// them into a `__snapshotCases` static property. The suite must declare one
+/// hand-written parameterized runner test (the macro emits a compile-time
+/// error when it is missing):
 ///
 /// ```swift
 /// @SnapshotSuite("SettingsView")
@@ -12,9 +15,17 @@ import CoreGraphics
 ///     func loaded() -> some View {
 ///         SettingsView()
 ///     }
+///
+///     @Test func snapshots() {
+///         for snapshotCase in Self.__snapshotCases { snapshotCase.run() }
+///     }
 /// }
 /// ```
-@attached(member, names: arbitrary)
+///
+/// The runner cannot be macro-generated: expanding `@Test` inside
+/// macro-generated declarations loses lexical context and produces test
+/// content records that do not compile inside a type.
+@attached(member, names: named(__snapshotCases))
 public macro SnapshotSuite(_ viewName: String) =
     #externalMacro(module: "VisualTestingMacros", type: "SnapshotSuiteMacro")
 

@@ -1,0 +1,35 @@
+{
+  "generatedAt" : "2026-06-06T05:39:44Z",
+  "name" : "SampleComponent",
+  "states" : {
+    "withSize" : {
+      "disableAnimations" : false,
+      "inNavigation" : false,
+      "snapshots" : [
+        {
+          "file" : "withSize.light.png",
+          "theme" : "light"
+        },
+        {
+          "file" : "withSize.dark.png",
+          "theme" : "dark"
+        }
+      ]
+    },
+    "withoutSize" : {
+      "disableAnimations" : false,
+      "inNavigation" : false,
+      "snapshots" : [
+        {
+          "file" : "withoutSize.light.png",
+          "theme" : "light"
+        },
+        {
+          "file" : "withoutSize.dark.png",
+          "theme" : "dark"
+        }
+      ]
+    }
+  },
+  "type" : "component"
+}

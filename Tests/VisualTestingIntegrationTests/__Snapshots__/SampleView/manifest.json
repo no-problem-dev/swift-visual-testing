@@ -1,0 +1,319 @@
+{
+  "generatedAt" : "2026-06-06T05:39:47Z",
+  "name" : "SampleView",
+  "states" : {
+    "allAttributes" : {
+      "disableAnimations" : true,
+      "inNavigation" : true,
+      "snapshots" : [
+        {
+          "device" : "iPhone16",
+          "file" : "iPhone16\/allAttributes.light_en.png",
+          "locale" : "en",
+          "theme" : "light"
+        },
+        {
+          "device" : "iPhone16",
+          "file" : "iPhone16\/allAttributes.light_ja.png",
+          "locale" : "ja",
+          "theme" : "light"
+        },
+        {
+          "device" : "iPhone16",
+          "file" : "iPhone16\/allAttributes.dark_en.png",
+          "locale" : "en",
+          "theme" : "dark"
+        },
+        {
+          "device" : "iPhone16",
+          "file" : "iPhone16\/allAttributes.dark_ja.png",
+          "locale" : "ja",
+          "theme" : "dark"
+        },
+        {
+          "device" : "iPhoneSE",
+          "file" : "iPhoneSE\/allAttributes.light_en.png",
+          "locale" : "en",
+          "theme" : "light"
+        },
+        {
+          "device" : "iPhoneSE",
+          "file" : "iPhoneSE\/allAttributes.light_ja.png",
+          "locale" : "ja",
+          "theme" : "light"
+        },
+        {
+          "device" : "iPhoneSE",
+          "file" : "iPhoneSE\/allAttributes.dark_en.png",
+          "locale" : "en",
+          "theme" : "dark"
+        },
+        {
+          "device" : "iPhoneSE",
+          "file" : "iPhoneSE\/allAttributes.dark_ja.png",
+          "locale" : "ja",
+          "theme" : "dark"
+        },
+        {
+          "device" : "iPadPro11",
+          "file" : "iPadPro11\/allAttributes.light_en.png",
+          "locale" : "en",
+          "theme" : "light"
+        },
+        {
+          "device" : "iPadPro11",
+          "file" : "iPadPro11\/allAttributes.light_ja.png",
+          "locale" : "ja",
+          "theme" : "light"
+        },
+        {
+          "device" : "iPadPro11",
+          "file" : "iPadPro11\/allAttributes.dark_en.png",
+          "locale" : "en",
+          "theme" : "dark"
+        },
+        {
+          "device" : "iPadPro11",
+          "file" : "iPadPro11\/allAttributes.dark_ja.png",
+          "locale" : "ja",
+          "theme" : "dark"
+        }
+      ]
+    },
+    "hello" : {
+      "disableAnimations" : false,
+      "inNavigation" : false,
+      "snapshots" : [
+        {
+          "device" : "iPhone16",
+          "file" : "iPhone16\/hello.light_en.png",
+          "locale" : "en",
+          "theme" : "light"
+        },
+        {
+          "device" : "iPhone16",
+          "file" : "iPhone16\/hello.light_ja.png",
+          "locale" : "ja",
+          "theme" : "light"
+        },
+        {
+          "device" : "iPhone16",
+          "file" : "iPhone16\/hello.dark_en.png",
+          "locale" : "en",
+          "theme" : "dark"
+        },
+        {
+          "device" : "iPhone16",
+          "file" : "iPhone16\/hello.dark_ja.png",
+          "locale" : "ja",
+          "theme" : "dark"
+        },
+        {
+          "device" : "iPhoneSE",
+          "file" : "iPhoneSE\/hello.light_en.png",
+          "locale" : "en",
+          "theme" : "light"
+        },
+        {
+          "device" : "iPhoneSE",
+          "file" : "iPhoneSE\/hello.light_ja.png",
+          "locale" : "ja",
+          "theme" : "light"
+        },
+        {
+          "device" : "iPhoneSE",
+          "file" : "iPhoneSE\/hello.dark_en.png",
+          "locale" : "en",
+          "theme" : "dark"
+        },
+        {
+          "device" : "iPhoneSE",
+          "file" : "iPhoneSE\/hello.dark_ja.png",
+          "locale" : "ja",
+          "theme" : "dark"
+        },
+        {
+          "device" : "iPadPro11",
+          "file" : "iPadPro11\/hello.light_en.png",
+          "locale" : "en",
+          "theme" : "light"
+        },
+        {
+          "device" : "iPadPro11",
+          "file" : "iPadPro11\/hello.light_ja.png",
+          "locale" : "ja",
+          "theme" : "light"
+        },
+        {
+          "device" : "iPadPro11",
+          "file" : "iPadPro11\/hello.dark_en.png",
+          "locale" : "en",
+          "theme" : "dark"
+        },
+        {
+          "device" : "iPadPro11",
+          "file" : "iPadPro11\/hello.dark_ja.png",
+          "locale" : "ja",
+          "theme" : "dark"
+        }
+      ]
+    },
+    "inNavigationStack" : {
+      "disableAnimations" : false,
+      "inNavigation" : true,
+      "snapshots" : [
+        {
+          "device" : "iPhone16",
+          "file" : "iPhone16\/inNavigationStack.light_en.png",
+          "locale" : "en",
+          "theme" : "light"
+        },
+        {
+          "device" : "iPhone16",
+          "file" : "iPhone16\/inNavigationStack.light_ja.png",
+          "locale" : "ja",
+          "theme" : "light"
+        },
+        {
+          "device" : "iPhone16",
+          "file" : "iPhone16\/inNavigationStack.dark_en.png",
+          "locale" : "en",
+          "theme" : "dark"
+        },
+        {
+          "device" : "iPhone16",
+          "file" : "iPhone16\/inNavigationStack.dark_ja.png",
+          "locale" : "ja",
+          "theme" : "dark"
+        },
+        {
+          "device" : "iPhoneSE",
+          "file" : "iPhoneSE\/inNavigationStack.light_en.png",
+          "locale" : "en",
+          "theme" : "light"
+        },
+        {
+          "device" : "iPhoneSE",
+          "file" : "iPhoneSE\/inNavigationStack.light_ja.png",
+          "locale" : "ja",
+          "theme" : "light"
+        },
+        {
+          "device" : "iPhoneSE",
+          "file" : "iPhoneSE\/inNavigationStack.dark_en.png",
+          "locale" : "en",
+          "theme" : "dark"
+        },
+        {
+          "device" : "iPhoneSE",
+          "file" : "iPhoneSE\/inNavigationStack.dark_ja.png",
+          "locale" : "ja",
+          "theme" : "dark"
+        },
+        {
+          "device" : "iPadPro11",
+          "file" : "iPadPro11\/inNavigationStack.light_en.png",
+          "locale" : "en",
+          "theme" : "light"
+        },
+        {
+          "device" : "iPadPro11",
+          "file" : "iPadPro11\/inNavigationStack.light_ja.png",
+          "locale" : "ja",
+          "theme" : "light"
+        },
+        {
+          "device" : "iPadPro11",
+          "file" : "iPadPro11\/inNavigationStack.dark_en.png",
+          "locale" : "en",
+          "theme" : "dark"
+        },
+        {
+          "device" : "iPadPro11",
+          "file" : "iPadPro11\/inNavigationStack.dark_ja.png",
+          "locale" : "ja",
+          "theme" : "dark"
+        }
+      ]
+    },
+    "withDisabledAnimation" : {
+      "disableAnimations" : true,
+      "inNavigation" : false,
+      "snapshots" : [
+        {
+          "device" : "iPhone16",
+          "file" : "iPhone16\/withDisabledAnimation.light_en.png",
+          "locale" : "en",
+          "theme" : "light"
+        },
+        {
+          "device" : "iPhone16",
+          "file" : "iPhone16\/withDisabledAnimation.light_ja.png",
+          "locale" : "ja",
+          "theme" : "light"
+        },
+        {
+          "device" : "iPhone16",
+          "file" : "iPhone16\/withDisabledAnimation.dark_en.png",
+          "locale" : "en",
+          "theme" : "dark"
+        },
+        {
+          "device" : "iPhone16",
+          "file" : "iPhone16\/withDisabledAnimation.dark_ja.png",
+          "locale" : "ja",
+          "theme" : "dark"
+        },
+        {
+          "device" : "iPhoneSE",
+          "file" : "iPhoneSE\/withDisabledAnimation.light_en.png",
+          "locale" : "en",
+          "theme" : "light"
+        },
+        {
+          "device" : "iPhoneSE",
+          "file" : "iPhoneSE\/withDisabledAnimation.light_ja.png",
+          "locale" : "ja",
+          "theme" : "light"
+        },
+        {
+          "device" : "iPhoneSE",
+          "file" : "iPhoneSE\/withDisabledAnimation.dark_en.png",
+          "locale" : "en",
+          "theme" : "dark"
+        },
+        {
+          "device" : "iPhoneSE",
+          "file" : "iPhoneSE\/withDisabledAnimation.dark_ja.png",
+          "locale" : "ja",
+          "theme" : "dark"
+        },
+        {
+          "device" : "iPadPro11",
+          "file" : "iPadPro11\/withDisabledAnimation.light_en.png",
+          "locale" : "en",
+          "theme" : "light"
+        },
+        {
+          "device" : "iPadPro11",
+          "file" : "iPadPro11\/withDisabledAnimation.light_ja.png",
+          "locale" : "ja",
+          "theme" : "light"
+        },
+        {
+          "device" : "iPadPro11",
+          "file" : "iPadPro11\/withDisabledAnimation.dark_en.png",
+          "locale" : "en",
+          "theme" : "dark"
+        },
+        {
+          "device" : "iPadPro11",
+          "file" : "iPadPro11\/withDisabledAnimation.dark_ja.png",
+          "locale" : "ja",
+          "theme" : "dark"
+        }
+      ]
+    }
+  },
+  "type" : "view"
+}

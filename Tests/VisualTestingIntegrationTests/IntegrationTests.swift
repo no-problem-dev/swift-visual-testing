@@ -54,6 +54,12 @@ struct SampleViewSnapshots {
     func allAttributes() -> some View {
         SampleView()
     }
+
+    @Test func snapshots() {
+        for snapshotCase in Self.__snapshotCases {
+            snapshotCase.run()
+        }
+    }
 }
 
 // MARK: - Component Snapshot Integration
@@ -71,6 +77,12 @@ struct SampleComponentSnapshots {
     func withoutSize() -> some View {
         SampleComponent()
     }
+
+    @Test func snapshots() {
+        for snapshotCase in Self.__snapshotCases {
+            snapshotCase.run()
+        }
+    }
 }
 
 // MARK: - Mixed Integration
@@ -87,6 +99,12 @@ struct MixedSampleSnapshots {
     @ComponentSnapshot(width: 200, height: 60)
     func component() -> some View {
         SampleComponent()
+    }
+
+    @Test func snapshots() {
+        for snapshotCase in Self.__snapshotCases {
+            snapshotCase.run()
+        }
     }
 }
 #endif
