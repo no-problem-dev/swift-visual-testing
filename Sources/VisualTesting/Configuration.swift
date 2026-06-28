@@ -85,7 +85,10 @@ public struct SnapshotConfiguration: Sendable {
     /// Default configuration: iPhone16 + iPhoneSE, light + dark, en + ja
     public static let `default` = SnapshotConfiguration()
 
-    /// Component configuration: theme-only axis
+    /// Configuration for component snapshot suites: theme axis only, no device frames, no locale variation.
+    ///
+    /// Use this when calling `VisualTesting.assertComponentSnapshot` directly, or rely on
+    /// `@ComponentSnapshot`-annotated functions which use it automatically.
     public static let component = SnapshotConfiguration(
         devices: [],
         themes: SnapshotTheme.allCases,
