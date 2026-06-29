@@ -6,18 +6,19 @@ import UIKit
 
 // MARK: - VisualTesting
 
-/// Core assertion functions for visual testing.
+/// スナップショットテストのコアアサーション関数群。
 public enum VisualTesting {
 
-    /// The theme applicator used for all snapshots.
-    /// Set this in your test target to use a custom theme system.
+    /// 全スナップショットに適用するテーマアプリケーター。
+    ///
+    /// カスタムテーマシステムを使う場合はテストターゲット内でここへ設定する。
     @MainActor
     public static var themeApplicable: any ThemeApplicable = DefaultThemeApplicable()
 
-    /// Assert view snapshots across device x theme x locale matrix.
+    /// デバイス × テーマ × ロケールのマトリクス全体で View スナップショットをアサートする。
     ///
-    /// Called by generated `@Test` methods from `@SnapshotSuite`.
-    /// Produces files at: `__Snapshots__/{viewName}/{device}/{stateName}.{theme}_{locale}.png`
+    /// `@SnapshotSuite` から生成された `@Test` メソッドが呼び出す。
+    /// 出力先: `__Snapshots__/{viewName}/{device}/{stateName}.{theme}_{locale}.png`
     @MainActor
     public static func assertViewSnapshot<V: View>(
         of view: V,
@@ -86,10 +87,10 @@ public enum VisualTesting {
         }
     }
 
-    /// Assert component snapshots across theme axis only.
+    /// テーマ軸のみでコンポーネントスナップショットをアサートする。
     ///
-    /// Components don't use device frames. Produces files at:
-    /// `__Snapshots__/{componentName}/{stateName}.{theme}.png`
+    /// デバイスフレームは使用しない。
+    /// 出力先: `__Snapshots__/{componentName}/{stateName}.{theme}.png`
     @MainActor
     public static func assertComponentSnapshot<V: View>(
         of view: V,
@@ -175,7 +176,7 @@ public enum VisualTesting {
         return hostingController
     }
 
-    /// Compute snapshot directory with device subdirectory: `{testFileDir}/__Snapshots__/{viewName}/{device}`
+    /// デバイスサブディレクトリ付きのスナップショットディレクトリを返す: `{testFileDir}/__Snapshots__/{viewName}/{device}`
     private static func snapshotDirectory(file: StaticString, viewName: String, device: SnapshotDevice) -> String {
         let fileURL = URL(fileURLWithPath: "\(file)")
         return fileURL
@@ -186,7 +187,7 @@ public enum VisualTesting {
             .path
     }
 
-    /// Compute snapshot directory without device: `{testFileDir}/__Snapshots__/{viewName}`
+    /// デバイスなしのスナップショットディレクトリを返す: `{testFileDir}/__Snapshots__/{viewName}`
     private static func snapshotDirectory(file: StaticString, viewName: String) -> String {
         let fileURL = URL(fileURLWithPath: "\(file)")
         return fileURL

@@ -2,10 +2,10 @@
 import SwiftUI
 import Testing
 
-/// A single snapshot case collected by `@SnapshotSuite`.
+/// `@SnapshotSuite` が収集する 1 つのスナップショットケース。
 ///
-/// The macro gathers `@Snapshot` / `@ComponentSnapshot` functions into
-/// `__snapshotCases`; a hand-written parameterized test runs them:
+/// マクロは `@Snapshot` / `@ComponentSnapshot` 関数を `__snapshotCases` へ収集する。
+/// 手書きのパラメタライズドテストがそれらを実行する。
 ///
 /// ```swift
 /// @SnapshotSuite("SettingsView")
@@ -20,17 +20,16 @@ import Testing
 /// }
 /// ```
 ///
-/// The runner test must be written by hand: `@Test` cannot be reliably
-/// expanded inside macro-generated declarations (the compiler loses the
-/// lexical context and swift-testing emits file-scope test records that
-/// do not compile inside a type).
+/// ランナーテストは手書きが必須。マクロ生成の宣言内で `@Test` を展開するとコンパイラが
+/// lexical context を失い、swift-testing がファイルスコープのテストレコードを生成して
+/// 型の内部でコンパイルできなくなるためである。
 public struct SnapshotCase: Sendable, CustomTestStringConvertible {
 
-    /// How the snapshot is captured and named.
+    /// スナップショットのキャプチャ方式と命名方式。
     public enum Kind: Sendable {
-        /// Full-view snapshot across the device × theme × locale matrix.
+        /// デバイス × テーマ × ロケールのマトリクスでキャプチャする全画面 View スナップショット。
         case view(inNavigation: Bool, disableAnimations: Bool)
-        /// Component snapshot across the theme axis only.
+        /// テーマ軸のみでキャプチャするコンポーネントスナップショット。
         case component(width: CGFloat?, height: CGFloat?)
     }
 
@@ -53,10 +52,10 @@ public struct SnapshotCase: Sendable, CustomTestStringConvertible {
 
     public var testDescription: String { stateName }
 
-    /// Runs the snapshot assertion for this case.
+    /// このケースのスナップショットアサーションを実行する。
     ///
-    /// Call from the suite's own file so that `#filePath` resolves the
-    /// snapshot directory next to the test source.
+    /// `#filePath` がテストソースの隣のスナップショットディレクトリに解決されるよう、
+    /// スイート自身のファイルから呼び出す。
     @MainActor
     public func run(
         configuration: SnapshotConfiguration = .default,

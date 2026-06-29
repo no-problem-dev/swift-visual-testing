@@ -5,8 +5,8 @@ extension VisualTesting {
 
     // MARK: - Per-View Manifest Update
 
-    /// Update the per-view `manifest.json` after each assertion.
-    /// Performs read-modify-write on `__Snapshots__/{viewName}/manifest.json`.
+    /// アサーションごとに per-view `manifest.json` を更新する。
+    /// `__Snapshots__/{viewName}/manifest.json` を読み込み・変更・書き込みする。
     static func updateManifest(
         viewName: String,
         type: SnapshotType,
@@ -97,11 +97,11 @@ extension VisualTesting {
 
     // MARK: - Root Catalog Generation
 
-    /// Generate a root `snapshot-catalog.json` by aggregating all `manifest.json` files.
+    /// 全 `manifest.json` を集約してルートの `snapshot-catalog.json` を生成する。
     ///
-    /// - Parameter rootDirectory: The directory containing `__Snapshots__` subdirectories to scan.
-    /// - Parameter outputPath: Path to write the catalog JSON file.
-    /// - Returns: The generated `SnapshotCatalog`.
+    /// - Parameter rootDirectory: スキャン対象の `__Snapshots__` サブディレクトリを含むディレクトリ。
+    /// - Parameter outputPath: カタログ JSON ファイルの出力先パス。
+    /// - Returns: 生成された `SnapshotCatalog`。
     @discardableResult
     public static func generateCatalog(rootDirectory: String, outputPath: String) -> SnapshotCatalog {
         let rootURL = URL(fileURLWithPath: rootDirectory)
@@ -211,7 +211,7 @@ extension VisualTesting {
         return formatter.string(from: Date())
     }
 
-    /// Compute the relative path from `base` to `target`.
+    /// `base` から `target` への相対パスを返す。
     private static func relativePath(from base: URL, to target: URL) -> String {
         let basePath = base.standardizedFileURL.path
         let targetPath = target.standardizedFileURL.path
@@ -223,11 +223,11 @@ extension VisualTesting {
         return relative
     }
 
-    /// Extract the category from a manifest directory path.
+    /// マニフェストディレクトリパスからカテゴリを抽出する。
     ///
-    /// Looks for `__Snapshots__` in the path and returns the directory name immediately before it.
+    /// パス内の `__Snapshots__` を探し、その直前のディレクトリ名を返す。
     /// - `Views/Dashboard/__Snapshots__/DashboardView` → `"Dashboard"`
-    /// - `DesignSystem/__Snapshots__/Card` → `nil` (top-level section, not a sub-category)
+    /// - `DesignSystem/__Snapshots__/Card` → `nil`（サブカテゴリのないトップレベルセクション）
     private static func extractCategory(from manifestDir: URL, root: URL) -> String? {
         let rel = relativePath(from: root, to: manifestDir)
         let components = rel.split(separator: "/").map(String.init)

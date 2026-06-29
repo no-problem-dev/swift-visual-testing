@@ -1,21 +1,21 @@
-# Getting Started with VisualTesting
+# VisualTesting 入門
 
-Add snapshot testing to your Swift package in minutes.
+数分でスナップショットテストを Swift パッケージに追加する。
 
-## Installation
+## インストール
 
-Add `swift-visual-testing` to your `Package.swift` dependencies:
+`Package.swift` の dependencies に `swift-visual-testing` を追加する：
 
 ```swift
 dependencies: [
     .package(
         url: "https://github.com/no-problem-dev/swift-visual-testing.git",
-        .upToNextMajor(from: "2.0.0")
+        from: "1.0.1"
     ),
 ],
 ```
 
-Then add `VisualTesting` to your test target:
+次に `VisualTesting` をテストターゲットに追加する：
 
 ```swift
 .testTarget(
@@ -27,11 +27,11 @@ Then add `VisualTesting` to your test target:
 ),
 ```
 
-## Basic Usage
+## 基本的な使い方
 
-### Snapshot a view across the default matrix
+### デフォルトマトリクスで View をスナップショット
 
-Create a test file in your test target and annotate a struct with `@SnapshotSuite`:
+テストターゲットにテストファイルを作成し、struct に `@SnapshotSuite` を付与する：
 
 ```swift
 import Testing
@@ -42,7 +42,7 @@ import VisualTesting
 @MainActor
 struct ProfileViewSnapshots {
 
-    // Each @Snapshot function returns the view to capture.
+    // 各 @Snapshot 関数はキャプチャする View を返す
     @Snapshot
     func loggedIn() -> some View {
         ProfileView(user: .preview)
@@ -60,7 +60,7 @@ struct ProfileViewSnapshots {
         ProfileView(user: nil)
     }
 
-    // Write one runner by hand — @SnapshotSuite emits a compile error if missing.
+    // ランナーは手書きが必須 — @SnapshotSuite は欠落時にコンパイルエラーを出力する
     @Test func snapshots() {
         for snapshotCase in Self.__snapshotCases {
             snapshotCase.run()
@@ -69,12 +69,12 @@ struct ProfileViewSnapshots {
 }
 ```
 
-On first run the PNG references are written to
-`Tests/MyFeatureTests/__Snapshots__/ProfileView/`. Subsequent runs compare against them.
+初回実行時、PNG リファレンス画像が `Tests/MyFeatureTests/__Snapshots__/ProfileView/` に書き込まれる。
+2 回目以降の実行ではそのリファレンス画像と比較する。
 
-### Snapshot a design-system component
+### デザインシステムコンポーネントをスナップショット
 
-Components use a theme-only axis (no device frame, no locale):
+コンポーネントはテーマ軸のみを使用する（デバイスフレーム・ロケールなし）：
 
 ```swift
 @SnapshotSuite("PrimaryButton")
@@ -99,9 +99,9 @@ struct PrimaryButtonSnapshots {
 }
 ```
 
-### Customise the capture matrix
+### キャプチャマトリクスをカスタマイズ
 
-Pass a `SnapshotConfiguration` to `run(configuration:)`:
+`run(configuration:)` に `SnapshotConfiguration` を渡す：
 
 ```swift
 @Test func snapshots() {
@@ -116,16 +116,16 @@ Pass a `SnapshotConfiguration` to `run(configuration:)`:
 }
 ```
 
-### Integrate a custom theme system
+### カスタムテーマシステムを統合
 
-Set `VisualTesting.themeApplicable` once in your test setup:
+テストのセットアップで `VisualTesting.themeApplicable` を一度設定する：
 
 ```swift
-// In your test helper or setUp block
+// テストヘルパーまたは setUp ブロック内
 VisualTesting.themeApplicable = AppThemeApplicable()
 ```
 
-Then implement `ThemeApplicable`:
+次に `ThemeApplicable` を実装する：
 
 ```swift
 struct AppThemeApplicable: ThemeApplicable {
@@ -138,12 +138,12 @@ struct AppThemeApplicable: ThemeApplicable {
 }
 ```
 
-## Generating a Visual Gallery
+## ビジュアルギャラリーの生成
 
-After a test run, aggregate all manifests into an interactive HTML gallery:
+テスト実行後、全マニフェストを集約してインタラクティブな HTML ギャラリーを生成できる：
 
 ```swift
-// In a test or script
+// テストまたはスクリプト内
 let catalog = VisualTesting.generateCatalog(
     rootDirectory: "Tests/MyFeatureTests",
     outputPath: "snapshot-catalog.json"
@@ -151,5 +151,5 @@ let catalog = VisualTesting.generateCatalog(
 VisualTesting.generateGallery(catalog: catalog, outputPath: "snapshot-gallery.html")
 ```
 
-Open `snapshot-gallery.html` in any browser — no server required. The gallery supports
-filtering by device, theme, and locale, side-by-side light/dark comparison, and a lightbox.
+ブラウザで `snapshot-gallery.html` を開く（サーバー不要）。ギャラリーはデバイス・テーマ・
+ロケールでのフィルタリング、ライト/ダークの横並び比較、ライトボックスをサポートする。

@@ -2,18 +2,13 @@ import SwiftDiagnostics
 import SwiftSyntax
 import SwiftSyntaxMacros
 
-/// Collects `@Snapshot` / `@ComponentSnapshot` functions into a
-/// `__snapshotCases` static property.
+/// `@Snapshot` / `@ComponentSnapshot` 関数を `__snapshotCases` 静的プロパティに収集するマクロ。
 ///
-/// Design note: this macro must NOT generate `@Test` / `@Suite`
-/// declarations. The compiler loses lexical context when expanding
-/// swift-testing macros inside macro-generated declarations, so
-/// swift-testing emits file-scope test content records (`@_section` /
-/// `@_used` non-static properties) that do not compile inside a type
-/// (broken since the Xcode 26.4 toolchain; previously this macro
-/// generated a nested `@Suite` struct, which is exactly that failure
-/// mode). Instead, the user writes one parameterized runner test by
-/// hand — ``expansion`` diagnoses an error when it is missing.
+/// 設計上の注意: このマクロは `@Test` / `@Suite` 宣言を生成してはならない。
+/// マクロ生成の宣言内で swift-testing マクロを展開するとコンパイラが lexical context を失い、
+/// swift-testing がファイルスコープのテストコンテンツレコード（`@_section` / `@_used` の
+/// 非 static プロパティ）を生成して型の内部でコンパイルできなくなる（Xcode 26.4 以降で顕在化）。
+/// 代わりにユーザーが手書きのランナーテストを 1 つ記述し、`expansion` は欠落時にエラーを診断する。
 public struct SnapshotSuiteMacro: MemberMacro {
 
     static let runnerTemplate =
@@ -75,10 +70,9 @@ public struct SnapshotSuiteMacro: MemberMacro {
 
     // MARK: - Runner Detection
 
-    /// Whether the struct declares a hand-written runner that consumes
-    /// `__snapshotCases`. Checking for any `@Test` is not enough: a suite
-    /// can contain unrelated direct-API tests while the collected cases
-    /// silently never run.
+    /// struct が `__snapshotCases` を消費する手書きランナーを宣言しているかを返す。
+    /// `@Test` の有無だけでは不十分: スイートが直接 API テストのみを持ち、
+    /// 収集ケースが実行されない状態を見逃す可能性があるため。
     private static func hasHandwrittenTestRunner(_ declaration: some DeclGroupSyntax) -> Bool {
         for member in declaration.memberBlock.members {
             guard let funcDecl = member.decl.as(FunctionDeclSyntax.self) else { continue }
@@ -159,7 +153,7 @@ public struct SnapshotSuiteMacro: MemberMacro {
         return names
     }
 
-    /// Parse width/height from `@ComponentSnapshot(width: 340, height: 120)`
+    /// `@ComponentSnapshot(width: 340, height: 120)` から width/height を解析する。
     private static func parseComponentSize(from funcDecl: FunctionDeclSyntax) -> (width: String?, height: String?) {
         for attribute in funcDecl.attributes {
             guard let attr = attribute.as(AttributeSyntax.self),

@@ -4,12 +4,14 @@ import SnapshotTesting
 
 // MARK: - SnapshotDevice
 
-/// Device configuration for snapshot testing.
+/// スナップショットテスト用のデバイス設定。
 public enum SnapshotDevice: String, CaseIterable, Sendable {
     case iPhone16 = "iPhone16"
     case iPhoneSE = "iPhoneSE"
     case iPadPro11 = "iPadPro11"
 
+    /// デバイス固有の画面サイズ・セーフエリア・ピクセル密度を定義した `ViewImageConfig`。
+    /// スナップショット撮影時にこの設定でビューをレンダリングする。
     public var config: ViewImageConfig {
         switch self {
         case .iPhone16:
@@ -45,11 +47,12 @@ public enum SnapshotDevice: String, CaseIterable, Sendable {
 
 // MARK: - SnapshotTheme
 
-/// Theme configuration for snapshot testing.
+/// スナップショットテスト用のテーマ設定。
 public enum SnapshotTheme: String, CaseIterable, Sendable {
     case light
     case dark
 
+    /// テーマに対応する `UIUserInterfaceStyle`。スナップショット撮影時に `UITraitCollection` へ適用する。
     public var userInterfaceStyle: UIUserInterfaceStyle {
         switch self {
         case .light: return .light
@@ -60,12 +63,17 @@ public enum SnapshotTheme: String, CaseIterable, Sendable {
 
 // MARK: - SnapshotConfiguration
 
-/// Configuration for snapshot test matrix.
+/// スナップショットテストマトリクスの設定。
 public struct SnapshotConfiguration: Sendable {
+    /// テスト対象デバイスの一覧。
     public var devices: [SnapshotDevice]
+    /// テスト対象テーマ（ライト / ダーク）の一覧。
     public var themes: [SnapshotTheme]
+    /// テスト対象ロケールの一覧（例: `"en"`, `"ja"`）。
     public var locales: [String]
+    /// ピクセル単位の一致精度。0〜1 の範囲で 1.0 が完全一致。
     public var precision: Float
+    /// 知覚的な色差を許容する精度。アンチエイリアスのズレなど微細な差異を吸収する。
     public var perceptualPrecision: Float
 
     public init(
@@ -82,13 +90,13 @@ public struct SnapshotConfiguration: Sendable {
         self.perceptualPrecision = perceptualPrecision
     }
 
-    /// Default configuration: iPhone16 + iPhoneSE, light + dark, en + ja
+    /// デフォルト設定: iPhone16・iPhoneSE・iPadPro11、ライト・ダーク、en・ja。
     public static let `default` = SnapshotConfiguration()
 
-    /// Configuration for component snapshot suites: theme axis only, no device frames, no locale variation.
+    /// コンポーネントスナップショットスイート用設定。テーマ軸のみ（デバイスフレーム・ロケール変動なし）。
     ///
-    /// Use this when calling `VisualTesting.assertComponentSnapshot` directly, or rely on
-    /// `@ComponentSnapshot`-annotated functions which use it automatically.
+    /// `VisualTesting.assertComponentSnapshot` を直接呼び出す場合に使用する。
+    /// `@ComponentSnapshot` 付き関数では自動的にこの設定が適用される。
     public static let component = SnapshotConfiguration(
         devices: [],
         themes: SnapshotTheme.allCases,

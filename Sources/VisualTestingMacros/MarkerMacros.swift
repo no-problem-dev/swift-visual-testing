@@ -1,8 +1,8 @@
 import SwiftSyntax
 import SwiftSyntaxMacros
 
-/// Marker macro for view snapshot functions.
-/// Does not generate any code; used by `@SnapshotSuite` to detect snapshot targets.
+/// View スナップショット関数用のマーカーマクロ実装。
+/// コードを生成しない。`@SnapshotSuite` がスナップショット対象の検出に使用する。
 public struct SnapshotMacro: PeerMacro {
     public static func expansion(
         of node: AttributeSyntax,
@@ -16,8 +16,8 @@ public struct SnapshotMacro: PeerMacro {
     }
 }
 
-/// Marker macro for component snapshot functions with optional size.
-/// Does not generate any code; used by `@SnapshotSuite` to detect component snapshot targets.
+/// コンポーネントスナップショット関数用のマーカーマクロ実装（サイズ指定付き）。
+/// コードを生成しない。`@SnapshotSuite` がコンポーネントスナップショット対象の検出に使用する。
 public struct ComponentSnapshotMacro: PeerMacro {
     public static func expansion(
         of node: AttributeSyntax,
@@ -31,7 +31,7 @@ public struct ComponentSnapshotMacro: PeerMacro {
     }
 }
 
-/// Marker macro indicating the view should be wrapped in NavigationStack.
+/// `NavigationStack` でラップすることを示すマーカーマクロ実装。
 public struct InNavigationMacro: PeerMacro {
     public static func expansion(
         of node: AttributeSyntax,
@@ -42,7 +42,7 @@ public struct InNavigationMacro: PeerMacro {
     }
 }
 
-/// Marker macro indicating animations should be disabled during snapshot.
+/// スナップショットキャプチャ中のアニメーション無効化を示すマーカーマクロ実装。
 public struct WithoutAnimationMacro: PeerMacro {
     public static func expansion(
         of node: AttributeSyntax,

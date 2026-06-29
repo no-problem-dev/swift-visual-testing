@@ -1,11 +1,12 @@
 # ``VisualTesting``
 
-Macro-driven snapshot testing for SwiftUI views and design-system components.
+SwiftUI View とデザインシステムコンポーネント向けのマクロ駆動スナップショットテストライブラリ。
 
 ## Overview
 
-`VisualTesting` automates the full snapshot matrix — device × theme × locale — from a single
-struct annotation. You describe *what* to capture; the macros and assertion engine handle *how*.
+`VisualTesting` は、デバイス × テーマ × ロケールの全スナップショットマトリクスを
+1 つの struct アノテーションから自動化する。何を（what）キャプチャするかを記述するだけで、
+どのように（how）実行するかはマクロとアサーションエンジンが処理する。
 
 ```swift
 @SnapshotSuite("SettingsView")
@@ -31,29 +32,29 @@ struct SettingsViewSnapshots {
 }
 ```
 
-Running the test suite captures PNGs under `__Snapshots__/SettingsView/` for every combination
-of device (iPhone 16, iPhone SE, iPad Pro 11), theme (light, dark), and locale (en, ja).
+テストスイートを実行すると、デバイス（iPhone 16・iPhone SE・iPad Pro 11）、テーマ（ライト・ダーク）、
+ロケール（en・ja）の全組み合わせの PNG が `__Snapshots__/SettingsView/` に保存される。
 
-### Key types
+### 主要な型
 
-| Symbol | Role |
+| シンボル | 役割 |
 |---|---|
-| `SnapshotSuite(_:)` | Marks a struct as a snapshot test suite and collects cases |
-| `Snapshot()` | Marks a factory function as a full-view snapshot target |
-| `ComponentSnapshot(width:height:)` | Marks a factory as a component (theme-only) snapshot target |
-| `InNavigation()` | Wraps the view in a `NavigationStack` during capture |
-| `WithoutAnimation()` | Disables UIKit animations during capture |
-| `SnapshotCase` | Runtime representation of one snapshot case; drives `run()` |
-| `SnapshotConfiguration` | Configures the device × theme × locale matrix |
-| `ThemeApplicable` | Protocol for injecting a custom theme system |
+| `SnapshotSuite(_:)` | struct をスナップショットテストスイートとしてマーク付けし、ケースを収集する |
+| `Snapshot()` | ファクトリ関数を全画面 View スナップショット対象としてマーク付けする |
+| `ComponentSnapshot(width:height:)` | ファクトリ関数をコンポーネント（テーマ軸のみ）スナップショット対象としてマーク付けする |
+| `InNavigation()` | キャプチャ時に `NavigationStack` で View をラップする |
+| `WithoutAnimation()` | キャプチャ中に UIKit アニメーションを無効化する |
+| `SnapshotCase` | 1 つのスナップショットケースのランタイム表現。`run()` を駆動する |
+| `SnapshotConfiguration` | デバイス × テーマ × ロケールのマトリクスを設定する |
+| `ThemeApplicable` | カスタムテーマシステムを注入するためのプロトコル |
 
 ## Topics
 
-### Essentials
+### 入門
 
 - <doc:GettingStarted>
 
-### Macros
+### マクロ
 
 - ``SnapshotSuite(_:)``
 - ``Snapshot()``
@@ -61,25 +62,25 @@ of device (iPhone 16, iPhone SE, iPad Pro 11), theme (light, dark), and locale (
 - ``InNavigation()``
 - ``WithoutAnimation()``
 
-### Runtime
+### ランタイム
 
 - ``SnapshotCase``
 - ``SnapshotCase/Kind``
 - ``SnapshotCase/run(configuration:file:line:)``
 
-### Configuration
+### 設定
 
 - ``SnapshotConfiguration``
 - ``SnapshotDevice``
 - ``SnapshotTheme``
 
-### Theme Integration
+### テーマ統合
 
 - ``ThemeApplicable``
 - ``DefaultThemeApplicable``
 - ``VisualTesting/themeApplicable``
 
-### Catalog and Gallery
+### カタログとギャラリー
 
 - ``VisualTesting/generateCatalog(rootDirectory:outputPath:)``
 - ``VisualTesting/generateGallery(catalog:outputPath:)``

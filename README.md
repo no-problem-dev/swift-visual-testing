@@ -1,24 +1,26 @@
+English | [日本語](./README.ja.md)
+
 # VisualTesting
 
-SwiftUI向けのスナップショットテストライブラリ。宣言的マクロでボイラープレートを排除し、デバイス × テーマ × ロケールのマトリクスで自動的にスナップショットを生成します。
+SwiftUI snapshot testing library. Eliminates boilerplate with declarative macros and automatically generates snapshots across a device × theme × locale matrix.
 
 ![Swift 6.2+](https://img.shields.io/badge/Swift-6.2+-orange.svg)
 ![iOS 17+](https://img.shields.io/badge/iOS-17+-blue.svg)
 ![macOS 14+](https://img.shields.io/badge/macOS-14+-purple.svg)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
 
-## 特徴
+## Features
 
-- **宣言的マクロ**: `@SnapshotSuite` / `@Snapshot` / `@ComponentSnapshot` で View を返すだけ
-- **マトリクステスト**: デバイス × テーマ × ロケールの全組み合わせを自動生成
-- **デバイスサブディレクトリ**: `__Snapshots__/{ViewName}/{device}/{stateName}.{theme}_{locale}.png` で自動整理
-- **iPad 対応**: iPhone16 + iPhoneSE + iPadPro11 の3デバイスをデフォルトサポート
-- **メタデータカタログ**: per-view `manifest.json` とルート `snapshot-catalog.json` を自動生成
-- **テーマシステム統合**: `ThemeApplicable` プロトコルで任意のテーマシステムと接続
-- **View / Component 分離**: View は全軸マトリクス、コンポーネントはテーマ軸のみでテスト
-- **Swift Testing 対応**: `@Suite` / `@Test` との統合、`Issue.record` でのエラー報告
+- **Declarative macros**: `@SnapshotSuite` / `@Snapshot` / `@ComponentSnapshot` — just return a View
+- **Matrix testing**: Automatically generates every device × theme × locale combination
+- **Device subdirectories**: Auto-organized at `__Snapshots__/{ViewName}/{device}/{stateName}.{theme}_{locale}.png`
+- **iPad support**: iPhone 16, iPhone SE, and iPad Pro 11 supported by default (3 devices)
+- **Metadata catalog**: Auto-generates per-view `manifest.json` and root `snapshot-catalog.json`
+- **Theme system integration**: Connect any theme system via the `ThemeApplicable` protocol
+- **View / Component separation**: Views use the full matrix; components use theme axis only
+- **Swift Testing support**: Integrates with `@Suite` / `@Test`; reports failures via `Issue.record`
 
-## クイックスタート
+## Quick Start
 
 ```swift
 import SwiftUI
@@ -48,12 +50,12 @@ struct SettingsViewSnapshots {
 }
 ```
 
-> **Note**: 各スイートには手書きのランナーテスト（`@Test func snapshots()`）が 1 つ必要です。
-> マクロは `__snapshotCases` の収集のみを行います — `@Test` をマクロ生成すると
-> コンパイラが lexical context を失い、swift-testing のテストレコードが壊れるためです
-> （ランナーが無い場合はコンパイルエラーで正確な追加行を提示します）。
+> **Note**: Each suite requires one hand-written runner test (`@Test func snapshots()`).
+> The macro only collects `__snapshotCases` — generating `@Test` from a macro causes the
+> compiler to lose lexical context and corrupts swift-testing's test records.
+> A compile error with the exact line to add is emitted when the runner is missing.
 
-この2つの関数から、以下のリファレンス画像が自動生成されます：
+These two functions automatically produce the following reference images:
 
 ```
 __Snapshots__/
@@ -71,22 +73,22 @@ __Snapshots__/
     iPadPro11/
       loaded.light_en.png
       ...
-    manifest.json                    ← per-view メタデータ (自動生成)
+    manifest.json                    ← per-view metadata (auto-generated)
 ```
 
-## インストール
+## Installation
 
 ### Swift Package Manager
 
-`Package.swift` に以下を追加：
+Add to `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/no-problem-dev/swift-visual-testing.git", from: "1.2.0")
+    .package(url: "https://github.com/no-problem-dev/swift-visual-testing.git", from: "1.0.1")
 ]
 ```
 
-テストターゲットに追加：
+Add to your test target:
 
 ```swift
 .testTarget(
@@ -97,11 +99,11 @@ dependencies: [
 )
 ```
 
-## 使い方
+## Usage
 
-### View スナップショット
+### View Snapshots
 
-`@SnapshotSuite` と `@Snapshot` で画面全体の View をキャプチャします。関数は View を返すだけ。viewName / stateName はマクロが自動的に解決します。
+Use `@SnapshotSuite` and `@Snapshot` to capture full-screen Views. Each function just returns a View — the macro resolves viewName and stateName automatically.
 
 ```swift
 @SnapshotSuite("MyView")
@@ -125,13 +127,13 @@ struct MyViewSnapshots {
 }
 ```
 
-**出力**: `__Snapshots__/MyView/{device}/loaded.{theme}_{locale}.png`
+**Output**: `__Snapshots__/MyView/{device}/loaded.{theme}_{locale}.png`
 
-デフォルトで 3デバイス × 2テーマ × 2ロケール = **12枚** のスナップショットが生成されます。
+The default configuration produces 3 devices × 2 themes × 2 locales = **12 snapshots**.
 
-### コンポーネントスナップショット
+### Component Snapshots
 
-`@ComponentSnapshot` でUIコンポーネント（ボタン、カードなど）を固定サイズでキャプチャします。テーマ軸のみ。
+Use `@ComponentSnapshot` to capture UI components (buttons, cards, etc.) at a fixed size. Theme axis only.
 
 ```swift
 @SnapshotSuite("Card")
@@ -157,34 +159,34 @@ struct CardSnapshots {
 }
 ```
 
-**出力**: `__Snapshots__/Card/level1.light.png`, `__Snapshots__/Card/level1.dark.png`
+**Output**: `__Snapshots__/Card/level1.light.png`, `__Snapshots__/Card/level1.dark.png`
 
-### 属性マクロ
+### Attribute Macros
 
-テスト関数に属性マクロを付与して振る舞いをカスタマイズします。
+Attach attribute macros to test functions to customize behavior.
 
 ```swift
 @Snapshot
-@InNavigation        // NavigationStack でラップ
-@WithoutAnimation    // アニメーション無効化
+@InNavigation        // Wrap in NavigationStack
+@WithoutAnimation    // Disable animations
 func detail() -> some View {
     DetailView()
 }
 ```
 
-### マクロ一覧
+### Macro Reference
 
-| マクロ | 種類 | 役割 |
+| Macro | Kind | Role |
 |--------|------|------|
-| `@SnapshotSuite("ViewName")` | MemberMacro | 子関数を探索し `@Test` メソッドを自動生成 |
-| `@Snapshot` | PeerMacro | View スナップショット対象のマーカー |
-| `@ComponentSnapshot(width:height:)` | PeerMacro | コンポーネント対象のマーカー（サイズ指定） |
-| `@InNavigation` | PeerMacro | `NavigationStack` ラップを指定 |
-| `@WithoutAnimation` | PeerMacro | アニメーション無効化を指定 |
+| `@SnapshotSuite("ViewName")` | MemberMacro | Collects `@Snapshot` / `@ComponentSnapshot` child functions into `__snapshotCases` (hand-written runner required) |
+| `@Snapshot` | PeerMacro | Marks a function as a view snapshot target |
+| `@ComponentSnapshot(width:height:)` | PeerMacro | Marks a function as a component target (with size) |
+| `@InNavigation` | PeerMacro | Specifies `NavigationStack` wrapping |
+| `@WithoutAnimation` | PeerMacro | Specifies animation disabling |
 
-### テーマシステムの統合
+### Theme System Integration
 
-デフォルトでは `environment(\.colorScheme, ...)` を使用します。カスタムテーマシステム（例: `ThemeProvider`）を使用する場合は、`ThemeApplicable` プロトコルを実装します。
+By default, `environment(\.colorScheme, ...)` is used. To integrate a custom theme system (e.g. `ThemeProvider`), implement the `ThemeApplicable` protocol.
 
 ```swift
 import DesignSystem
@@ -206,11 +208,11 @@ func setupVisualTesting() {
 }
 ```
 
-テストの `init()` で `setupVisualTesting()` を呼び出してください。
+Call `setupVisualTesting()` in your test suite's `init()`.
 
-### 設定のカスタマイズ
+### Customizing Configuration
 
-デフォルトのマトリクス構成を変更する場合は `SnapshotConfiguration` を使用します。直接 API を呼び出す場合に `configuration` パラメータとして渡します。
+Use `SnapshotConfiguration` to change the default matrix. Pass it as the `configuration` parameter when calling the direct API.
 
 ```swift
 let config = SnapshotConfiguration(
@@ -222,20 +224,20 @@ let config = SnapshotConfiguration(
 )
 ```
 
-### リファレンス画像の記録
+### Recording Reference Images
 
-初回実行時、またはリファレンス画像を再記録する場合は環境変数を設定します：
+On first run, or to re-record reference images, set an environment variable:
 
 ```bash
-# 全スナップショットを記録モードで実行
+# Run in record mode for all snapshots
 SNAPSHOT_TESTING_RECORD=all swift test
 ```
 
-## 直接 API
+## Direct API
 
-マクロを使わず、より細かい制御が必要な場合は直接 API を使用できます。
+For more granular control without macros, use the direct API.
 
-### View スナップショット
+### View Snapshot
 
 ```swift
 @Suite("MyView Snapshots")
@@ -256,7 +258,7 @@ struct MyViewSnapshots {
 }
 ```
 
-### コンポーネントスナップショット
+### Component Snapshot
 
 ```swift
 VisualTesting.assertComponentSnapshot(
@@ -268,41 +270,41 @@ VisualTesting.assertComponentSnapshot(
     file: #filePath, line: #line)
 ```
 
-## API リファレンス
+## API Reference
 
-### マクロ
+### Macros
 
-| マクロ | 説明 |
+| Macro | Description |
 |--------|------|
-| `@SnapshotSuite("ViewName")` | struct に付与。子関数の `@Snapshot` / `@ComponentSnapshot` からテストを自動生成 |
-| `@Snapshot` | View スナップショット。デバイス × テーマ × ロケールの全組み合わせ |
-| `@ComponentSnapshot(width:height:)` | コンポーネントスナップショット。テーマ軸のみ |
-| `@InNavigation` | `NavigationStack` でラップ |
-| `@WithoutAnimation` | アニメーション無効化 |
+| `@SnapshotSuite("ViewName")` | Applied to a struct. Collects `@Snapshot` / `@ComponentSnapshot` child functions into `__snapshotCases`; a hand-written `@Test func snapshots()` runner is required |
+| `@Snapshot` | View snapshot. All device × theme × locale combinations |
+| `@ComponentSnapshot(width:height:)` | Component snapshot. Theme axis only |
+| `@InNavigation` | Wrap in `NavigationStack` |
+| `@WithoutAnimation` | Disable animations |
 
-### VisualTesting (直接 API)
+### VisualTesting (Direct API)
 
-| メソッド | 説明 |
+| Method | Description |
 |---------|------|
-| `assertViewSnapshot(of:viewName:stateName:inNavigation:disableAnimations:configuration:file:line:)` | View をデバイス × テーマ × ロケールでキャプチャ |
-| `assertComponentSnapshot(of:componentName:stateName:size:configuration:file:line:)` | コンポーネントをテーマ軸のみでキャプチャ |
-| `generateCatalog(rootDirectory:outputPath:)` | 全 manifest.json を集約して `snapshot-catalog.json` を生成 (戻り値: `SnapshotCatalog`) |
-| `generateGallery(catalog:outputPath:)` | カタログから自己完結型 HTML ギャラリーを生成 |
-| `themeApplicable` | テーマ適用ロジック（カスタマイズ可能） |
+| `assertViewSnapshot(of:viewName:stateName:inNavigation:disableAnimations:configuration:file:line:)` | Capture a View across device × theme × locale |
+| `assertComponentSnapshot(of:componentName:stateName:size:configuration:file:line:)` | Capture a component across theme axis only |
+| `generateCatalog(rootDirectory:outputPath:)` | Aggregate all manifest.json files into `snapshot-catalog.json` (returns `SnapshotCatalog`) |
+| `generateGallery(catalog:outputPath:)` | Generate a self-contained HTML gallery from a catalog |
+| `themeApplicable` | Theme application logic (customizable) |
 
 ### SnapshotConfiguration
 
-| プロパティ | 型 | デフォルト値 | 説明 |
-|----------|------|------------|------|
-| `devices` | `[SnapshotDevice]` | `[.iPhone16, .iPhoneSE, .iPadPro11]` | テスト対象デバイス |
-| `themes` | `[SnapshotTheme]` | `[.light, .dark]` | テスト対象テーマ |
-| `locales` | `[String]` | `["en", "ja"]` | テスト対象ロケール |
-| `precision` | `Float` | `0.99` | ピクセル精度 |
-| `perceptualPrecision` | `Float` | `0.98` | 知覚的精度 |
+| Property | Type | Default | Description |
+|----------|------|---------|------|
+| `devices` | `[SnapshotDevice]` | `[.iPhone16, .iPhoneSE, .iPadPro11]` | Target devices |
+| `themes` | `[SnapshotTheme]` | `[.light, .dark]` | Target themes |
+| `locales` | `[String]` | `["en", "ja"]` | Target locales |
+| `precision` | `Float` | `0.99` | Pixel precision |
+| `perceptualPrecision` | `Float` | `0.98` | Perceptual precision |
 
 ### SnapshotDevice
 
-| ケース | 画面サイズ | スケール |
+| Case | Screen Size | Scale |
 |--------|----------|---------|
 | `.iPhone16` | 393 × 852 | @3x |
 | `.iPhoneSE` | 375 × 667 | @2x |
@@ -310,10 +312,10 @@ VisualTesting.assertComponentSnapshot(
 
 ### SnapshotTheme
 
-| ケース | 説明 |
+| Case | Description |
 |--------|------|
-| `.light` | ライトモード |
-| `.dark` | ダークモード |
+| `.light` | Light mode |
+| `.dark` | Dark mode |
 
 ### ThemeApplicable
 
@@ -324,16 +326,16 @@ public protocol ThemeApplicable: Sendable {
 }
 ```
 
-デフォルト実装 `DefaultThemeApplicable` は `environment(\.colorScheme, ...)` を使用します。
+The default implementation `DefaultThemeApplicable` uses `environment(\.colorScheme, ...)`.
 
-## ディレクトリ構造
+## Directory Structure
 
-### View スナップショット
+### View Snapshots
 
 ```
 __Snapshots__/
-  SettingsView/                        ← viewName (@SnapshotSuite の引数)
-    iPhone16/                          ← デバイスサブディレクトリ
+  SettingsView/                        ← viewName (@SnapshotSuite argument)
+    iPhone16/                          ← device subdirectory
       loaded.light_en.png              ← stateName.theme_locale
       loaded.light_ja.png
       loaded.dark_en.png
@@ -346,39 +348,39 @@ __Snapshots__/
     iPadPro11/
       loaded.light_en.png
       ...
-    manifest.json                      ← per-view メタデータ (自動生成)
+    manifest.json                      ← per-view metadata (auto-generated)
 ```
 
-### コンポーネントスナップショット
+### Component Snapshots
 
 ```
 __Snapshots__/
-  Card/                                ← componentName (@SnapshotSuite の引数)
+  Card/                                ← componentName (@SnapshotSuite argument)
     level1.light.png                   ← stateName.theme
     level1.dark.png
     level2.light.png
     level2.dark.png
-    manifest.json                      ← per-view メタデータ (自動生成)
+    manifest.json                      ← per-view metadata (auto-generated)
 ```
 
-## メタデータカタログ
+## Metadata Catalog
 
-テスト実行時に per-view `manifest.json` が自動生成されます。全 manifest を集約してルートカタログを生成できます。
+A per-view `manifest.json` is auto-generated during each test run. Aggregate all manifests to produce a root catalog.
 
-### カタログ生成
+### Generating the Catalog
 
 ```swift
 @Test("Generate snapshot catalog")
 func generateCatalog() {
-    let snapshotsRoot = // __Snapshots__ ディレクトリのパス
-    let outputPath = // snapshot-catalog.json の出力先
+    let snapshotsRoot = // path to the __Snapshots__ directory
+    let outputPath = // output path for snapshot-catalog.json
     VisualTesting.generateCatalog(rootDirectory: snapshotsRoot, outputPath: outputPath)
 }
 ```
 
-### HTML ギャラリー生成
+### Generating the HTML Gallery
 
-カタログからブラウザで閲覧可能な HTML ギャラリーを自動生成できます。
+Generate a browser-viewable HTML gallery from the catalog.
 
 ```swift
 @Test("Generate snapshot catalog and gallery")
@@ -392,16 +394,16 @@ func generateCatalog() {
 }
 ```
 
-テスト実行後 `open gallery.html` でブラウザ確認：
+Open `gallery.html` in a browser after running tests (`open gallery.html`):
 
-- セクション / デバイス / テーマ / ロケール フィルター
-- テキスト検索（View 名でリアルタイムフィルター）
-- Compare モード（light vs dark 横並び）
-- Lightbox（クリック拡大 + ← → キーボードナビゲーション）
-- ギャラリーのダークモード切り替え
-- 画像の lazy loading
+- Section / device / theme / locale filters
+- Text search (real-time filter by View name)
+- Compare mode (light vs dark side by side)
+- Lightbox (click to enlarge + ← → keyboard navigation)
+- Gallery dark mode toggle
+- Lazy image loading
 
-### manifest.json 例
+### manifest.json Example
 
 ```json
 {
@@ -421,17 +423,17 @@ func generateCatalog() {
 }
 ```
 
-## 依存関係
+## Dependencies
 
-| パッケージ | 用途 |
+| Package | Purpose |
 |-----------|------|
-| [swift-syntax](https://github.com/swiftlang/swift-syntax) | マクロ実装 |
-| [swift-snapshot-testing](https://github.com/pointfreeco/swift-snapshot-testing) | スナップショットエンジン |
+| [swift-syntax](https://github.com/swiftlang/swift-syntax) | Macro implementation |
+| [swift-snapshot-testing](https://github.com/pointfreeco/swift-snapshot-testing) | Snapshot engine |
 
-## ドキュメント
+## Documentation
 
-詳細なAPIドキュメントは [GitHub Pages](https://no-problem-dev.github.io/swift-visual-testing/documentation/visualtesting/) で確認できます。
+Detailed API documentation is available on [GitHub Pages](https://no-problem-dev.github.io/swift-visual-testing/documentation/visualtesting/).
 
-## ライセンス
+## License
 
-MIT License - 詳細は [LICENSE](LICENSE) を参照してください。
+MIT License — see [LICENSE](LICENSE) for details.
