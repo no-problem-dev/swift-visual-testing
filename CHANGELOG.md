@@ -9,6 +9,31 @@
 
 なし
 
+## [2.0.0] - 2026-06-06
+
+### 破壊的変更
+
+- **`@Test` の自動生成を廃止し、`SnapshotCase` 収集方式へ再設計**: Xcode 26.4 で、マクロが生成した
+  `@Test` は宣言元の lexical context を失い swift-testing のテストレコードを壊すため、
+  `@SnapshotSuite` は `__snapshotCases` の収集だけを行うようになった。各スイートには
+  `@Test func snapshots() { for snapshotCase in Self.__snapshotCases { snapshotCase.run() } }`
+  のランナーを手書きで置く。`run(file:)` は既定で呼び出し元の `#filePath` を使うため、
+  ランナーはそのスイート自身のファイルに置くこと（参照画像の探索位置がそこで決まる）。
+- **参照画像のパス構成を変更**: View は `{view}/{device}/{state}.{theme}_{locale}.png`、
+  コンポーネントは `{component}/{state}.{theme}.png`。1.x で記録した画像は再記録が必要。
+
+### 追加
+
+- `SnapshotDevice` に `iPadPro11` を追加
+- HTML ギャラリー自動生成（`generateGallery`）と `basePath` / `category`
+- デバイス別サブディレクトリとメタデータカタログ（`manifest.json`）
+
+### 修正
+
+- ランナー検出を `__snapshotCases` 参照ベースに厳密化
+- Swift 6.2 の multiline string literal で明示的 `return` が必要な箇所を修正
+- マクロ生成コードでの `SourceLocation` クラッシュ
+
 ## [1.0.0] - 2026-02-17
 
 ### 追加

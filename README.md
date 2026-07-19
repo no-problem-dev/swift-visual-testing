@@ -18,7 +18,7 @@ SwiftUI snapshot testing library. Eliminates boilerplate with declarative macros
 - **Metadata catalog**: Auto-generates per-view `manifest.json` and root `snapshot-catalog.json`
 - **Theme system integration**: Connect any theme system via the `ThemeApplicable` protocol
 - **View / Component separation**: Views use the full matrix; components use theme axis only
-- **Swift Testing support**: Integrates with `@Suite` / `@Test`; reports failures via `Issue.record`
+- **Swift Testing support**: Each suite runs the collected `SnapshotCase` values from one hand-written `@Test`; failures are reported via `Issue.record`
 
 ## Quick Start
 
@@ -84,7 +84,7 @@ Add to `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/no-problem-dev/swift-visual-testing.git", from: "1.0.1")
+    .package(url: "https://github.com/no-problem-dev/swift-visual-testing.git", from: "2.0.0")
 ]
 ```
 
@@ -226,11 +226,15 @@ let config = SnapshotConfiguration(
 
 ### Recording Reference Images
 
-On first run, or to re-record reference images, set an environment variable:
+On first run, or to re-record reference images, set the record-mode environment variable.
+
+`VisualTesting` is built on UIKit, so tests run on an iOS Simulator via `xcodebuild` — not `swift test`. Pass the variable with the `TEST_RUNNER_` prefix so `xcodebuild` forwards it to the test runner process, where swift-snapshot-testing reads it as `SNAPSHOT_TESTING_RECORD`.
 
 ```bash
 # Run in record mode for all snapshots
-SNAPSHOT_TESTING_RECORD=all swift test
+TEST_RUNNER_SNAPSHOT_TESTING_RECORD=all xcodebuild test \
+  -scheme YourScheme \
+  -destination 'platform=iOS Simulator,name=iPhone 16'
 ```
 
 ## Direct API
@@ -281,6 +285,32 @@ VisualTesting.assertComponentSnapshot(
 | `@ComponentSnapshot(width:height:)` | Component snapshot. Theme axis only |
 | `@InNavigation` | Wrap in `NavigationStack` |
 | `@WithoutAnimation` | Disable animations |
+
+### SnapshotCase
+
+One collected snapshot case. `@SnapshotSuite` gathers every `@Snapshot` / `@ComponentSnapshot` function into the `static var __snapshotCases: [SnapshotCase]` property, and the hand-written runner executes them.
+
+```swift
+public struct SnapshotCase: Sendable, CustomTestStringConvertible {
+    public enum Kind: Sendable {
+        case view(inNavigation: Bool, disableAnimations: Bool)
+        case component(width: CGFloat?, height: CGFloat?)
+    }
+
+    public let viewName: String
+    public let stateName: String
+    public let kind: Kind
+
+    @MainActor
+    public func run(
+        configuration: SnapshotConfiguration = .default,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    )
+}
+```
+
+`run()` dispatches to `assertViewSnapshot` or `assertComponentSnapshot` depending on `kind`. Because `file` defaults to `#filePath` at the call site, calling `run()` from the suite's own file is what makes snapshots resolve to the `__Snapshots__` directory next to that test source. Pass `configuration:` to override the matrix for a single suite.
 
 ### VisualTesting (Direct API)
 
