@@ -44,31 +44,34 @@ public enum VisualTesting {
 
             for theme in configuration.themes {
                 for locale in configuration.locales {
-                    let vc = makeHostingController(
-                        view: wrapped,
-                        device: device,
-                        theme: theme,
-                        locale: locale
-                    )
-                    let snapshotName = "\(theme.rawValue)_\(locale)"
-
-                    let failure = verifySnapshot(
-                        of: vc,
-                        as: .image(
-                            on: device.config,
-                            precision: configuration.precision,
-                            perceptualPrecision: configuration.perceptualPrecision
-                        ),
-                        named: snapshotName,
-                        snapshotDirectory: dir,
-                        file: file,
-                        testName: stateName,
-                        line: line
-                    )
-                    if let message = failure {
-                        Issue.record(
-                            Comment(rawValue: "\(viewName)/\(device.rawValue)/\(stateName).\(snapshotName): \(message)")
+                    for dynamicType in configuration.dynamicTypes {
+                        let vc = makeHostingController(
+                            view: wrapped,
+                            device: device,
+                            theme: theme,
+                            locale: locale,
+                            dynamicType: dynamicType
                         )
+                        let snapshotName = snapshotName(theme: theme, locale: locale, dynamicType: dynamicType)
+
+                        let failure = verifySnapshot(
+                            of: vc,
+                            as: .image(
+                                on: device.config(dynamicType: dynamicType),
+                                precision: configuration.precision,
+                                perceptualPrecision: configuration.perceptualPrecision
+                            ),
+                            named: snapshotName,
+                            snapshotDirectory: dir,
+                            file: file,
+                            testName: stateName,
+                            line: line
+                        )
+                        if let message = failure {
+                            Issue.record(
+                                Comment(rawValue: "\(viewName)/\(device.rawValue)/\(stateName).\(snapshotName): \(message)")
+                            )
+                        }
                     }
                 }
             }
@@ -80,6 +83,7 @@ public enum VisualTesting {
                 device: device,
                 themes: configuration.themes,
                 locales: configuration.locales,
+                dynamicTypes: configuration.dynamicTypes,
                 inNavigation: inNavigation,
                 disableAnimations: disableAnimations,
                 file: file
@@ -157,15 +161,31 @@ public enum VisualTesting {
 
     // MARK: - Private Helpers
 
+    /// 参照画像の名前。
+    ///
+    /// **既定の文字サイズでは名前に何も足さない。** 足すと 2.0 系で撮った参照画像が
+    /// 全部行方不明になり、この軸を使っていないスイートまで撮り直しになる。
+    private static func snapshotName(
+        theme: SnapshotTheme,
+        locale: String,
+        dynamicType: SnapshotDynamicType
+    ) -> String {
+        let base = "\(theme.rawValue)_\(locale)"
+        return dynamicType == .standard ? base : "\(base)_\(dynamicType.rawValue)"
+    }
+
     @MainActor
     private static func makeHostingController<V: View>(
         view: V,
         device: SnapshotDevice,
         theme: SnapshotTheme,
-        locale: String
+        locale: String,
+        dynamicType: SnapshotDynamicType
     ) -> UIViewController {
         let themed = themeApplicable.applyTheme(view, theme: theme)
-        let localized = themed.environment(\.locale, Locale(identifier: locale))
+        let localized = themed
+            .environment(\.locale, Locale(identifier: locale))
+            .environment(\.dynamicTypeSize, dynamicType.dynamicTypeSize)
 
         let hostingController = UIHostingController(rootView: localized)
         hostingController.view.frame = CGRect(

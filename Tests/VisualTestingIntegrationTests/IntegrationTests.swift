@@ -85,6 +85,52 @@ struct SampleComponentSnapshots {
     }
 }
 
+// MARK: - iPad Split Widths and Dynamic Type
+
+/// Verifies the iPad window widths and the Dynamic Type axis render end-to-end.
+///
+/// These axes are opt-in: `SnapshotConfiguration.default` keeps the original three devices
+/// and the standard text size, so adding them here must not change any other suite's output.
+@Suite("iPad widths and Dynamic Type")
+@MainActor
+struct AdaptiveAxesSnapshots {
+    @Test func splitWidths() {
+        VisualTesting.assertViewSnapshot(
+            of: SampleView(),
+            viewName: "AdaptiveSample",
+            stateName: "splitWidths",
+            inNavigation: false,
+            disableAnimations: true,
+            configuration: SnapshotConfiguration(
+                devices: [.iPadPro11Half, .iPadPro11Third],
+                themes: [.light],
+                locales: ["en"]
+            ),
+            file: #filePath,
+            line: #line
+        )
+    }
+
+    /// The standard size keeps the 2.0 file name; only the accessibility size gets a suffix.
+    @Test func dynamicType() {
+        VisualTesting.assertViewSnapshot(
+            of: SampleView(),
+            viewName: "AdaptiveSample",
+            stateName: "dynamicType",
+            inNavigation: false,
+            disableAnimations: true,
+            configuration: SnapshotConfiguration(
+                devices: [.iPhoneSE],
+                themes: [.light],
+                locales: ["en"],
+                dynamicTypes: [.standard, .accessibility3]
+            ),
+            file: #filePath,
+            line: #line
+        )
+    }
+}
+
 // MARK: - Mixed Integration
 
 /// Verifies @Snapshot and @ComponentSnapshot can coexist in the same suite.
