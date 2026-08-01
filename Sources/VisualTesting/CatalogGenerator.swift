@@ -14,6 +14,7 @@ extension VisualTesting {
         device: SnapshotDevice?,
         themes: [SnapshotTheme],
         locales: [String],
+        dynamicTypes: [SnapshotDynamicType] = [.standard],
         inNavigation: Bool,
         disableAnimations: Bool,
         file: StaticString
@@ -46,13 +47,18 @@ extension VisualTesting {
             // View snapshot: device subdirectory
             for theme in themes {
                 for locale in locales {
-                    let fileName = "\(device.rawValue)/\(stateName).\(theme.rawValue)_\(locale).png"
-                    entries.append(SnapshotEntry(
-                        device: device.rawValue,
-                        theme: theme.rawValue,
-                        locale: locale,
-                        file: fileName
-                    ))
+                    for dynamicType in dynamicTypes {
+                        // 既定の文字サイズは名前に出さない（`Assertions.snapshotName` と同じ規則）。
+                        let suffix = dynamicType == .standard ? "" : "_\(dynamicType.rawValue)"
+                        let fileName = "\(device.rawValue)/\(stateName).\(theme.rawValue)_\(locale)\(suffix).png"
+                        entries.append(SnapshotEntry(
+                            device: device.rawValue,
+                            theme: theme.rawValue,
+                            locale: locale,
+                            dynamicType: dynamicType == .standard ? nil : dynamicType.rawValue,
+                            file: fileName
+                        ))
+                    }
                 }
             }
         } else {
@@ -63,6 +69,7 @@ extension VisualTesting {
                     device: nil,
                     theme: theme.rawValue,
                     locale: nil,
+                    dynamicType: nil,
                     file: fileName
                 ))
             }

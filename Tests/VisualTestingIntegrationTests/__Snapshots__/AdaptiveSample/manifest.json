@@ -1,0 +1,44 @@
+{
+  "generatedAt" : "2026-08-01T15:24:12Z",
+  "name" : "AdaptiveSample",
+  "states" : {
+    "dynamicType" : {
+      "disableAnimations" : true,
+      "inNavigation" : false,
+      "snapshots" : [
+        {
+          "device" : "iPhoneSE",
+          "file" : "iPhoneSE\/dynamicType.light_en.png",
+          "locale" : "en",
+          "theme" : "light"
+        },
+        {
+          "device" : "iPhoneSE",
+          "dynamicType" : "accessibility3",
+          "file" : "iPhoneSE\/dynamicType.light_en_accessibility3.png",
+          "locale" : "en",
+          "theme" : "light"
+        }
+      ]
+    },
+    "splitWidths" : {
+      "disableAnimations" : true,
+      "inNavigation" : false,
+      "snapshots" : [
+        {
+          "device" : "iPadPro11Half",
+          "file" : "iPadPro11Half\/splitWidths.light_en.png",
+          "locale" : "en",
+          "theme" : "light"
+        },
+        {
+          "device" : "iPadPro11Third",
+          "file" : "iPadPro11Third\/splitWidths.light_en.png",
+          "locale" : "en",
+          "theme" : "light"
+        }
+      ]
+    }
+  },
+  "type" : "view"
+}

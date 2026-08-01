@@ -12,9 +12,9 @@ SwiftUI向けのスナップショットテストライブラリ。宣言的マ�
 ## 特徴
 
 - **宣言的マクロ**: `@SnapshotSuite` / `@Snapshot` / `@ComponentSnapshot` で View を返すだけ
-- **マトリクステスト**: デバイス × テーマ × ロケールの全組み合わせを自動生成
+- **マトリクステスト**: デバイス × テーマ × ロケール × 文字サイズの全組み合わせを自動生成
 - **デバイスサブディレクトリ**: `__Snapshots__/{ViewName}/{device}/{stateName}.{theme}_{locale}.png` で自動整理
-- **iPad 対応**: iPhone16 + iPhoneSE + iPadPro11 の3デバイスをデフォルトサポート
+- **iPad 対応**: iPhone16 + iPhoneSE + iPadPro11 の3デバイスをデフォルトサポート。iPadOS 26 のウィンドウ幅（1/2・1/3）は明示指定で足せる
 - **メタデータカタログ**: per-view `manifest.json` とルート `snapshot-catalog.json` を自動生成
 - **テーマシステム統合**: `ThemeApplicable` プロトコルで任意のテーマシステムと接続
 - **View / Component 分離**: View は全軸マトリクス、コンポーネントはテーマ軸のみでテスト
@@ -329,16 +329,25 @@ public struct SnapshotCase: Sendable, CustomTestStringConvertible {
 | `devices` | `[SnapshotDevice]` | `[.iPhone16, .iPhoneSE, .iPadPro11]` | テスト対象デバイス |
 | `themes` | `[SnapshotTheme]` | `[.light, .dark]` | テスト対象テーマ |
 | `locales` | `[String]` | `["en", "ja"]` | テスト対象ロケール |
+| `dynamicTypes` | `[SnapshotDynamicType]` | `[.standard]` | テスト対象の文字サイズ |
 | `precision` | `Float` | `0.99` | ピクセル精度 |
 | `perceptualPrecision` | `Float` | `0.98` | 知覚的精度 |
 
 ### SnapshotDevice
 
-| ケース | 画面サイズ | スケール |
-|--------|----------|---------|
-| `.iPhone16` | 393 × 852 | @3x |
-| `.iPhoneSE` | 375 × 667 | @2x |
-| `.iPadPro11` | 834 × 1194 | @2x |
+| ケース | 画面サイズ | スケール | horizontal size class |
+|--------|----------|---------|------|
+| `.iPhone16` | 393 × 852 | @3x | compact |
+| `.iPhoneSE` | 375 × 667 | @2x | compact |
+| `.iPadPro11` | 834 × 1194 | @2x | regular |
+| `.iPadPro11Half` | 597 × 834 | @2x | compact |
+| `.iPadPro11Third` | 398 × 834 | @2x | compact |
+
+後ろの 2 つは iPad のウィンドウ幅。iPadOS 26 で Split View / Slide Over が廃止されて
+自由リサイズのウィンドウになり、HIG が 1/2・1/3 幅での検証を求めるようになったため足した。
+幅は横向き（1194pt）を基準に取る —— 縦向きの 1/3（278pt）は iPadOS が許すウィンドウの
+最小幅を下回り、実際には作れない面を撮ることになる。
+**既定の端末一覧には入れていない。** 要るスイートが明示的に足す。
 
 ### SnapshotTheme
 
@@ -346,6 +355,18 @@ public struct SnapshotCase: Sendable, CustomTestStringConvertible {
 |--------|------|
 | `.light` | ライトモード |
 | `.dark` | ダークモード |
+
+### SnapshotDynamicType
+
+| ケース | `DynamicTypeSize` | ファイル名の接尾辞 |
+|--------|------|------|
+| `.standard` | `.large` | なし |
+| `.accessibility3` | `.accessibility3` | `_accessibility3` |
+
+`.standard` は 2.0 系と同じファイル名のままなので、**この軸を足しても既存の参照画像は
+無効にならない。** SwiftUI の `\.dynamicTypeSize` 環境と `preferredContentSizeCategory`
+trait の両方に効かせる —— 環境だけだと、UIKit が寸法を決める部分（ナビゲーションバー・
+リスト行の最小高）が既定サイズのまま残る。
 
 ### ThemeApplicable
 

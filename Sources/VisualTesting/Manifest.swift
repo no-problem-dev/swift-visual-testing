@@ -70,13 +70,16 @@ public struct SnapshotEntry: Codable, Sendable {
     public var theme: String
     /// ロケール識別子（例: `"en"`、`"ja"`）。コンポーネントスナップショットでは `nil`。
     public var locale: String?
+    /// 文字サイズの raw value（例: `"accessibility3"`）。既定の文字サイズでは `nil`。
+    public var dynamicType: String?
     /// マニフェストのディレクトリから PNG 画像への相対ファイルパス。
     public var file: String
 
-    public init(device: String?, theme: String, locale: String?, file: String) {
+    public init(device: String?, theme: String, locale: String?, dynamicType: String? = nil, file: String) {
         self.device = device
         self.theme = theme
         self.locale = locale
+        self.dynamicType = dynamicType
         self.file = file
     }
 }

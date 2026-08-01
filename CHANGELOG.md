@@ -9,6 +9,37 @@
 
 なし
 
+## [2.1.0] - 2026-08-02
+
+### 追加
+
+- **iPad の分割幅を `SnapshotDevice` に追加**: `iPadPro11Half`（597×834）と
+  `iPadPro11Third`（398×834）。iPadOS 26 で Split View / Slide Over が廃止され、
+  ウィンドウが自由リサイズになったため、HIG が求める 1/2・1/3 幅での検証を撮れるようにした。
+  幅は横向き（1194pt）を基準に取る —— 縦向きの 1/3（278pt）は iPadOS が許す
+  ウィンドウ最小幅を下回り、実際には作れない面になるため。
+  **どちらの幅も horizontal size class は compact に落ちる。**
+- **文字サイズの軸 `SnapshotDynamicType`**: `.standard`（`.large`）と
+  `.accessibility3`。`SnapshotConfiguration.dynamicTypes` で指定する。
+  SwiftUI の `\.dynamicTypeSize` 環境と `ViewImageConfig` の
+  `preferredContentSizeCategory` trait の両方に効かせる —— 環境だけだと、
+  UIKit が寸法を決める部分（ナビゲーションバー・リスト行の最小高）が既定サイズのまま残る。
+- `SnapshotEntry.dynamicType`（`String?`）。既定サイズでは `nil`。
+- `SnapshotConfiguration.standardDevices`（既定で撮る 3 端末）。
+
+### 変更
+
+- **`SnapshotConfiguration` の既定端末を `SnapshotDevice.allCases` から
+  `standardDevices` に変更した。** 端末を 1 つ足すたびに既存の全スイートが撮る枚数が
+  黙って増え、参照画像の無い面が失敗として現れるため。分割幅は使うスイートが明示的に足す。
+  **2.0 系で撮った参照画像はそのまま使える**（既定の行列は変わっていない）。
+
+### 互換性
+
+- 既定の文字サイズでは参照画像の名前を変えない（`{state}.{theme}_{locale}.png`）。
+  アクセシビリティサイズのときだけ `_{dynamicType}` が付く。2.0 系で記録した画像の
+  撮り直しは不要。
+
 ## [2.0.0] - 2026-06-06
 
 ### 破壊的変更

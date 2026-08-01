@@ -12,9 +12,9 @@ SwiftUI snapshot testing library. Eliminates boilerplate with declarative macros
 ## Features
 
 - **Declarative macros**: `@SnapshotSuite` / `@Snapshot` / `@ComponentSnapshot` — just return a View
-- **Matrix testing**: Automatically generates every device × theme × locale combination
+- **Matrix testing**: Automatically generates every device × theme × locale × text size combination
 - **Device subdirectories**: Auto-organized at `__Snapshots__/{ViewName}/{device}/{stateName}.{theme}_{locale}.png`
-- **iPad support**: iPhone 16, iPhone SE, and iPad Pro 11 supported by default (3 devices)
+- **iPad support**: iPhone 16, iPhone SE, and iPad Pro 11 by default; iPadOS 26 window widths (1/2, 1/3) opt in
 - **Metadata catalog**: Auto-generates per-view `manifest.json` and root `snapshot-catalog.json`
 - **Theme system integration**: Connect any theme system via the `ThemeApplicable` protocol
 - **View / Component separation**: Views use the full matrix; components use theme axis only
@@ -129,7 +129,7 @@ struct MyViewSnapshots {
 
 **Output**: `__Snapshots__/MyView/{device}/loaded.{theme}_{locale}.png`
 
-The default configuration produces 3 devices × 2 themes × 2 locales = **12 snapshots**.
+The default configuration produces 3 devices × 2 themes × 2 locales × 1 text size = **12 snapshots**.
 
 ### Component Snapshots
 
@@ -329,16 +329,25 @@ public struct SnapshotCase: Sendable, CustomTestStringConvertible {
 | `devices` | `[SnapshotDevice]` | `[.iPhone16, .iPhoneSE, .iPadPro11]` | Target devices |
 | `themes` | `[SnapshotTheme]` | `[.light, .dark]` | Target themes |
 | `locales` | `[String]` | `["en", "ja"]` | Target locales |
+| `dynamicTypes` | `[SnapshotDynamicType]` | `[.standard]` | Target text sizes |
 | `precision` | `Float` | `0.99` | Pixel precision |
 | `perceptualPrecision` | `Float` | `0.98` | Perceptual precision |
 
 ### SnapshotDevice
 
-| Case | Screen Size | Scale |
-|--------|----------|---------|
-| `.iPhone16` | 393 × 852 | @3x |
-| `.iPhoneSE` | 375 × 667 | @2x |
-| `.iPadPro11` | 834 × 1194 | @2x |
+| Case | Screen Size | Scale | Horizontal size class |
+|--------|----------|---------|------|
+| `.iPhone16` | 393 × 852 | @3x | compact |
+| `.iPhoneSE` | 375 × 667 | @2x | compact |
+| `.iPadPro11` | 834 × 1194 | @2x | regular |
+| `.iPadPro11Half` | 597 × 834 | @2x | compact |
+| `.iPadPro11Third` | 398 × 834 | @2x | compact |
+
+The two window widths cover the 1/2 and 1/3 sizes the HIG asks you to verify now that
+iPadOS 26 replaced Split View with freely resizable windows. Widths are taken from the
+landscape screen (1194pt) — a third of the portrait width (278pt) is below the minimum
+window width iPadOS allows, so it would render a layout no user can produce. They are
+**not** in the default device list; add them explicitly to the suites that need them.
 
 ### SnapshotTheme
 
@@ -346,6 +355,18 @@ public struct SnapshotCase: Sendable, CustomTestStringConvertible {
 |--------|------|
 | `.light` | Light mode |
 | `.dark` | Dark mode |
+
+### SnapshotDynamicType
+
+| Case | `DynamicTypeSize` | File name suffix |
+|--------|------|------|
+| `.standard` | `.large` | none |
+| `.accessibility3` | `.accessibility3` | `_accessibility3` |
+
+`.standard` keeps the 2.0 file name, so adding this axis never invalidates existing
+reference images. Both the SwiftUI `\.dynamicTypeSize` environment and the
+`preferredContentSizeCategory` trait are set — the environment alone leaves UIKit-sized
+chrome (navigation bar, minimum row height) at the default size.
 
 ### ThemeApplicable
 
