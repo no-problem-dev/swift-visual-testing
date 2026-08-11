@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- The documented way to re-record was `SNAPSHOT_TESTING_RECORD=all`, which is the slowest mode and
+  produces the least reviewable result. `all` rewrites every image whether or not it matched and
+  reports all of them as failures — nothing was compared, so nothing passed — which forces a second
+  full run to learn whether the outcome is right. On swift-markdown-view's 136 images that is 272
+  renders instead of 136, and a 136-file diff in which the real changes cannot be told from the
+  churn. The guide now leads with `failed`, which renders once, writes only what differs, and passes
+  on completion, and it names `missing` for adding cases to a suite you do not want to disturb.
+  `all` is kept for the case it is actually good at: flushing drift that the precision tolerances
+  have been absorbing — `perceptualPrecision: 0.98` does not fail on a 2–3 unit shift, and 46
+  swift-design-system references had gone stale that way with only 2 ever failing.
+
 ## [3.0.0] - 2026-08-11
 
 ### Fixed

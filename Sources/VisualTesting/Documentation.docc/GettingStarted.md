@@ -154,15 +154,32 @@ Because the tests run under `xcodebuild`, the variable needs the `TEST_RUNNER_` 
 makes `xcodebuild` forward it into the test runner process, where it is read as
 `SNAPSHOT_TESTING_RECORD`.
 
+**Use `failed` unless you specifically want a full refresh.**
+
 ```bash
-TEST_RUNNER_SNAPSHOT_TESTING_RECORD=all xcodebuild test \
+TEST_RUNNER_SNAPSHOT_TESTING_RECORD=failed xcodebuild test \
   -scheme YourScheme \
   -destination 'platform=iOS Simulator,name=iPhone 16'
 ```
 
-A record run reports every image it wrote as a failure. That is deliberate on
-swift-snapshot-testing's part: nothing was compared, so nothing passed. Turn record mode off, re-run
-to get a real result, and read the image diff before committing.
+`failed` renders every snapshot once, compares it, and writes **only the ones that differ**. The run
+passes when it finishes, so there is no second pass, and `git status` afterwards lists exactly the
+images that actually changed.
+
+`all` costs roughly twice the wall clock for the same result. It rewrites every image whether or not
+it matched, and reports all of them as failures — nothing was compared, so nothing passed — which
+forces a second full run to find out whether the result is right. On a suite of 136 images that is
+272 renders instead of 136, and a 136-file diff in which the handful of real changes are
+indistinguishable from the churn. Measured on swift-markdown-view, 2026-08-11.
+
+`missing` records only images that do not exist yet, and leaves every existing one alone. That is
+the one to use when adding cases to a suite you do not intend to disturb.
+
+Reach for `all` deliberately, when you want to flush drift that the precision tolerances have been
+absorbing. `perceptualPrecision: 0.98` does not fail on a 2–3 unit shift, so a reference can be
+stale and still pass; a full refresh is how that gets swept out. In swift-design-system, 46
+references had drifted that way and only 2 of them ever failed. But treat that as its own task with
+its own review — not as the way to re-record a fix.
 
 ## Generating the gallery
 
