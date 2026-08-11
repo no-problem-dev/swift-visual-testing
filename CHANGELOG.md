@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Dark captures were rendered under a light `UITraitCollection`.** Every `ViewImageConfig` hard-coded
+  `userInterfaceStyle: .light`, so a dark snapshot had a dark `\.colorScheme` and a light trait
+  collection underneath. SwiftUI's own drawing followed the environment, but the ground UIKit paints
+  under a hosting controller followed the traits — a screen with no background of its own came back
+  as a **white sheet with white text on it**, content present and invisible. `SnapshotTheme`'s
+  existing `userInterfaceStyle` is now put on the traits of every view capture and passed to every
+  component capture. SwiftUI re-resolves the UIKit values handed to it — `Color(uiColor:)` from a
+  dynamic provider, a `UIView` inside a `UIViewRepresentable` — from `\.colorScheme`, so those were
+  never wrong; what was wrong is everything SwiftUI does not draw itself. **Dark reference images
+  recorded before this must be re-recorded**; light images are unchanged.
+- **`inNavigation` and `disableAnimations` in `manifest.json` were frozen at first capture.** They now
+  describe how the state is captured on the current run.
+
+### Changed
+
+- **`SnapshotManifest` no longer has `generatedAt`.** These files are committed beside the reference
+  images, and a wall-clock timestamp rewritten on every run left the working tree dirty after every
+  test run — which teaches everyone to discard snapshot output without reading it, the exact reflex
+  that hides a real snapshot change. Every remaining field is a function of what was captured, so a
+  dirty `manifest.json` now means the set of images changed. `SnapshotCatalog.generatedAt` stays: the
+  catalog is regenerated on demand and is not committed.
+- **`generateCatalog(rootDirectory:outputPath:)` and `generateGallery(catalog:outputPath:)` throw.**
+  Every read and write in both was `try?`. An unreadable manifest was skipped, and a gallery that
+  never reached disk returned as if it had — and a gallery missing a view looks exactly like a view
+  nobody captured. Failures now surface as ``VisualTestingError``. A manifest that cannot be read or
+  written during an assertion is recorded as an issue, the same way a mismatched image is.
+- **`SnapshotDevice.config` is now `config(theme:dynamicType:)`.** The theme has to reach the traits,
+  and one function building the traits from one geometry table replaces the parallel `config` /
+  `config(dynamicType:)` pair. The geometry is available on its own as `size`, `safeArea`, and
+  `displayScale`; `size` is non-optional, which removes the silent 393×852 fallback that stood in for
+  a device with no size.
+- **`@WithoutAnimation` is honoured on `@ComponentSnapshot`.** It was accepted and ignored. This adds
+  `disableAnimations` to `SnapshotCase.Kind.component` and to `assertComponentSnapshot`.
+- **`@InNavigation` on a `@ComponentSnapshot` is a compile error**, as is either marker on a function
+  marked with neither capture attribute. A component is captured without a device frame, so there is
+  no navigation bar for the image to hold; the attribute could never have done anything.
+- **`@SnapshotSuite`'s runner detection reads tokens instead of source text.** Source text carries its
+  comments, so a `@Test` mentioning `__snapshotCases` only in a commented-out line satisfied the
+  check and took away the diagnostic from the one suite that needed it.
+
+### Removed
+
+- **`SnapshotConfiguration.component`.** A component capture reads the theme axis and the two
+  precisions whatever it is handed, so this constant behaved identically to `.default` and its
+  documentation described a behaviour it did not have.
+
 ## [2.1.0] - 2026-08-02
 
 ### Added

@@ -1,6 +1,7 @@
 #if canImport(UIKit)
 import SwiftUI
 import Testing
+import UIKit
 import VisualTesting
 
 // MARK: - Sample Views for Integration Testing
@@ -74,6 +75,7 @@ struct SampleComponentSnapshots {
     }
 
     @ComponentSnapshot()
+    @WithoutAnimation
     func withoutSize() -> some View {
         SampleComponent()
     }
@@ -82,6 +84,31 @@ struct SampleComponentSnapshots {
         for snapshotCase in Self.__snapshotCases {
             snapshotCase.run()
         }
+    }
+}
+
+// MARK: - Theme Reaches UIKit
+
+/// Verifies a capture is rendered under the trait collection matching its theme.
+///
+/// A dark `\.colorScheme` alone is not enough. Everything the SwiftUI view does not paint itself —
+/// the ground the hosting controller puts under it, which is all a screen without an explicit
+/// background has — is resolved by UIKit against these traits. Recorded under a light trait
+/// collection, `SampleView`'s dark images came back a solid white sheet with white text on it: the
+/// content was there and invisible.
+@Suite("Capture traits")
+struct CaptureTraitTests {
+    @Test(arguments: SnapshotTheme.allCases)
+    func configCarriesTheme(theme: SnapshotTheme) {
+        for device in SnapshotDevice.allCases {
+            #expect(device.config(theme: theme).traits.userInterfaceStyle == theme.userInterfaceStyle)
+        }
+    }
+
+    @Test func configCarriesTextSize() {
+        let traits = SnapshotDevice.iPhone16.config(theme: .dark, dynamicType: .accessibility3).traits
+        #expect(traits.preferredContentSizeCategory == SnapshotDynamicType.accessibility3.contentSizeCategory)
+        #expect(traits.userInterfaceStyle == .dark)
     }
 }
 

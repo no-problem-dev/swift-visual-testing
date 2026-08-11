@@ -15,77 +15,99 @@ public enum SnapshotDevice: String, CaseIterable, Sendable {
     /// The same window at about a third of that width (a third of 1194pt).
     case iPadPro11Third = "iPadPro11Third"
 
-    /// The screen size, safe area, and pixel density the view is rendered under.
-    public var config: ViewImageConfig {
+    /// The point size of the screen the view is rendered into.
+    public var size: CGSize { geometry.size }
+
+    /// The insets the status bar and home indicator take out of that screen.
+    public var safeArea: UIEdgeInsets { geometry.safeArea }
+
+    /// The pixel density this device stands for, put on the capture as a trait.
+    ///
+    /// It does not decide the size of the PNG. Measured on an iPhone 17 simulator, an `iPadPro11`
+    /// capture comes out 2502×3582 — 834×1194 at **3×**, the host simulator's screen scale, not the
+    /// 2× declared here. Reference images are therefore only comparable across machines running the
+    /// same simulator.
+    public var displayScale: CGFloat { geometry.displayScale }
+
+    /// The geometry, appearance, and text size the view is rendered under.
+    ///
+    /// **The theme has to be here, not only in the SwiftUI environment.** `\.colorScheme` reaches
+    /// what SwiftUI draws itself, and SwiftUI re-resolves the UIKit values it is handed — a
+    /// `Color(uiColor:)` built from a dynamic provider, a `UIView` inside a `UIViewRepresentable` —
+    /// from that same environment. What it does not reach is everything SwiftUI does not draw:
+    /// above all **the ground the hosting controller paints**, which is the whole image for a screen
+    /// with no background of its own. That is resolved against this `UITraitCollection`. Leave it
+    /// light and a dark capture comes back as a white sheet with white text on it.
+    ///
+    /// The text size is here for the same reason: SwiftUI follows `\.dynamicTypeSize` on its own,
+    /// but **the parts UIKit measures — navigation bars, minimum list row heights — stay at the
+    /// default size** unless the trait says otherwise, and the image stops matching a device.
+    public func config(theme: SnapshotTheme, dynamicType: SnapshotDynamicType = .standard) -> ViewImageConfig {
+        let geometry = self.geometry
+        return ViewImageConfig(
+            safeArea: geometry.safeArea,
+            size: geometry.size,
+            traits: UITraitCollection { traits in
+                traits.userInterfaceStyle = theme.userInterfaceStyle
+                traits.displayScale = geometry.displayScale
+                traits.preferredContentSizeCategory = dynamicType.contentSizeCategory
+            }
+        )
+    }
+
+    // MARK: - Geometry
+
+    private struct Geometry {
+        let size: CGSize
+        let safeArea: UIEdgeInsets
+        let displayScale: CGFloat
+    }
+
+    /// The screen this device stands for.
+    ///
+    /// The two iPad entries are the same screen at a narrower window width. iPadOS 26 dropped Split
+    /// View and Slide Over in favour of **freely resizable windows**, and the HIG asks for
+    /// verification at 1/2, 1/3, and 1/4 of the screen. The widths are taken from the landscape
+    /// screen (1194pt) — a third of the portrait width is 278pt, below the minimum window width
+    /// iPadOS allows, so it would capture a surface no user can produce.
+    ///
+    /// **Both narrow widths land in the compact horizontal size class** (an iPad turns regular at
+    /// roughly 768pt and up). What they show is therefore the iPad falling into the same layout
+    /// branch as an iPhone: width limits along the lines of `readableContentGuide`, and two-column
+    /// layouts that assume regular, do not apply there.
+    private var geometry: Geometry {
         switch self {
         case .iPhone16:
-            return ViewImageConfig(
-                safeArea: UIEdgeInsets(top: 59, left: 0, bottom: 34, right: 0),
+            Geometry(
                 size: CGSize(width: 393, height: 852),
-                traits: UITraitCollection(traitsFrom: [
-                    UITraitCollection(userInterfaceStyle: .light),
-                    UITraitCollection(displayScale: 3),
-                ])
+                safeArea: UIEdgeInsets(top: 59, left: 0, bottom: 34, right: 0),
+                displayScale: 3
             )
         case .iPhoneSE:
-            return ViewImageConfig(
-                safeArea: UIEdgeInsets(top: 20, left: 0, bottom: 0, right: 0),
+            Geometry(
                 size: CGSize(width: 375, height: 667),
-                traits: UITraitCollection(traitsFrom: [
-                    UITraitCollection(userInterfaceStyle: .light),
-                    UITraitCollection(displayScale: 2),
-                ])
+                safeArea: UIEdgeInsets(top: 20, left: 0, bottom: 0, right: 0),
+                displayScale: 2
             )
         case .iPadPro11:
-            return ViewImageConfig(
-                safeArea: UIEdgeInsets(top: 24, left: 0, bottom: 20, right: 0),
+            Geometry(
                 size: CGSize(width: 834, height: 1194),
-                traits: UITraitCollection(traitsFrom: [
-                    UITraitCollection(userInterfaceStyle: .light),
-                    UITraitCollection(displayScale: 2),
-                ])
+                safeArea: UIEdgeInsets(top: 24, left: 0, bottom: 20, right: 0),
+                displayScale: 2
             )
         case .iPadPro11Half:
-            return iPadWindow(width: 597)
+            Geometry(
+                size: CGSize(width: 597, height: 834),
+                safeArea: UIEdgeInsets(top: 24, left: 0, bottom: 20, right: 0),
+                displayScale: 2
+            )
         case .iPadPro11Third:
-            return iPadWindow(width: 398)
+            Geometry(
+                size: CGSize(width: 398, height: 834),
+                safeArea: UIEdgeInsets(top: 24, left: 0, bottom: 20, right: 0),
+                displayScale: 2
+            )
         }
-    }
-
-    /// The same geometry with a text-size trait layered on top.
-    ///
-    /// SwiftUI follows the `\.dynamicTypeSize` environment on its own, but unless the same size
-    /// is also put on the `ViewImageConfig` traits, **the parts UIKit measures — navigation bars,
-    /// minimum list row heights — stay at the default size** and the image stops matching a device.
-    public func config(dynamicType: SnapshotDynamicType) -> ViewImageConfig {
-        var config = self.config
-        config.traits = UITraitCollection(traitsFrom: [
-            config.traits,
-            UITraitCollection(preferredContentSizeCategory: dynamicType.contentSizeCategory),
-        ])
-        return config
-    }
-
-    /// An iPad geometry with only the window width changed.
-    ///
-    /// iPadOS 26 dropped Split View and Slide Over in favour of **freely resizable windows**, and the
-    /// HIG asks for verification at 1/2, 1/3, and 1/4 of the screen. The widths are taken from the
-    /// landscape screen (1194pt) — a third of the portrait width is 278pt, below the minimum window
-    /// width iPadOS allows, so it would capture a surface no user can produce.
-    ///
-    /// **Both widths land in the compact horizontal size class** (an iPad turns regular at roughly
-    /// 768pt and up). What these show is therefore the iPad falling into the same layout branch as an
-    /// iPhone: width limits along the lines of `readableContentGuide`, and two-column layouts that
-    /// assume regular, do not apply here.
-    private func iPadWindow(width: CGFloat) -> ViewImageConfig {
-        ViewImageConfig(
-            safeArea: UIEdgeInsets(top: 24, left: 0, bottom: 20, right: 0),
-            size: CGSize(width: width, height: 834),
-            traits: UITraitCollection(traitsFrom: [
-                UITraitCollection(userInterfaceStyle: .light),
-                UITraitCollection(displayScale: 2),
-            ])
-        )
     }
 }
 
@@ -124,12 +146,17 @@ public enum SnapshotDynamicType: String, CaseIterable, Sendable {
 
 // MARK: - SnapshotTheme
 
-/// A light or dark appearance to capture. How it reaches the view is decided by `ThemeApplicable`.
+/// A light or dark appearance to capture.
+///
+/// It reaches a capture along two paths, and both are needed. `ThemeApplicable` puts it into the
+/// SwiftUI environment, which is what SwiftUI's own drawing follows; `userInterfaceStyle` puts it
+/// into the `UITraitCollection` the image is rendered under, which is what everything outside that
+/// environment — the ground under the view most of all — follows.
 public enum SnapshotTheme: String, CaseIterable, Sendable {
     case light
     case dark
 
-    /// The UIKit appearance matching this theme, for callers that build their own `UITraitCollection`.
+    /// The UIKit appearance matching this theme, put on the traits every capture is rendered under.
     public var userInterfaceStyle: UIUserInterfaceStyle {
         switch self {
         case .light: return .light
@@ -141,12 +168,15 @@ public enum SnapshotTheme: String, CaseIterable, Sendable {
 // MARK: - SnapshotConfiguration
 
 /// The matrix a suite captures: every device × theme × locale × text size combination is one image.
+///
+/// A component capture reads the theme axis and the two precisions and ignores the rest — it has no
+/// device frame and no locale — so the same configuration can drive a suite holding both shapes.
 public struct SnapshotConfiguration: Sendable {
     /// Devices each view snapshot is repeated on. Every entry added multiplies the image count.
     public var devices: [SnapshotDevice]
-    /// Appearances to capture. Component snapshots use this axis and nothing else.
+    /// Appearances to capture. The one axis both capture shapes read.
     public var themes: [SnapshotTheme]
-    /// Locale identifiers to render under, such as `"en"` or `"ja"`. Empty for components.
+    /// Locale identifiers to render under, such as `"en"` or `"ja"`.
     public var locales: [String]
     /// Text sizes to capture. Defaults to `[.standard]`, so the axis costs nothing until asked for.
     public var dynamicTypes: [SnapshotDynamicType]
@@ -181,15 +211,5 @@ public struct SnapshotConfiguration: Sendable {
 
     /// iPhone 16, iPhone SE, and iPad Pro 11, light and dark, en and ja, at the default text size.
     public static let `default` = SnapshotConfiguration()
-
-    /// Theme axis only — no device frame, no locale variation.
-    ///
-    /// For calling `VisualTesting.assertComponentSnapshot` directly. Cases collected from
-    /// `@ComponentSnapshot` do not pick this up; they run under whatever the runner passes.
-    public static let component = SnapshotConfiguration(
-        devices: [],
-        themes: SnapshotTheme.allCases,
-        locales: []
-    )
 }
 #endif

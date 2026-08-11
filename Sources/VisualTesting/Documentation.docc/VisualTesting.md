@@ -55,7 +55,7 @@ Start at <doc:GettingStarted>.
 ### Asserting directly
 
 - ``VisualTesting/assertViewSnapshot(of:viewName:stateName:inNavigation:disableAnimations:configuration:file:line:)``
-- ``VisualTesting/assertComponentSnapshot(of:componentName:stateName:size:configuration:file:line:)``
+- ``VisualTesting/assertComponentSnapshot(of:componentName:stateName:size:disableAnimations:configuration:file:line:)``
 
 ### Catalog and gallery
 
@@ -68,3 +68,4 @@ Start at <doc:GettingStarted>.
 - ``SnapshotEntry``
 - ``CatalogConfiguration``
 - ``CatalogSummary``
+- ``VisualTestingError``

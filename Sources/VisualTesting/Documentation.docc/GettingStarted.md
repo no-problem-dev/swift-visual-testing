@@ -61,6 +61,9 @@ the type. Keep the runner in the suite's own file too: `run()` defaults `file` t
 Components use the theme axis alone — no device frame, no locale — at a size you specify. Leave the
 size out and the view's intrinsic size is used instead.
 
+``WithoutAnimation()`` applies here as well. ``InNavigation()`` does not, and saying it is a compile
+error: without a device frame there is no navigation bar for the image to hold.
+
 ```swift
 @SnapshotSuite("PrimaryButton")
 @MainActor
@@ -167,12 +170,16 @@ Every assertion writes a `manifest.json` beside its images. Aggregate those into
 render the catalog as a single HTML file.
 
 ```swift
-let catalog = VisualTesting.generateCatalog(
+let catalog = try VisualTesting.generateCatalog(
     rootDirectory: "Tests/MyFeatureTests",
     outputPath: "snapshot-catalog.json"
 )
-VisualTesting.generateGallery(catalog: catalog, outputPath: "snapshot-gallery.html")
+try VisualTesting.generateGallery(catalog: catalog, outputPath: "snapshot-gallery.html")
 ```
+
+Both throw. A manifest that cannot be read and a page that cannot be written are the two ways to end
+up with a gallery that is quietly missing views, and a gallery you cannot trust to be complete is
+worse than no gallery.
 
 Open `snapshot-gallery.html` in a browser; the CSS, the JavaScript, and the catalog itself are all
 inlined, so no server is involved. Image paths are relative to the catalog root, so keep the HTML

@@ -58,7 +58,7 @@ public enum VisualTesting {
                         let failure = verifySnapshot(
                             of: vc,
                             as: .image(
-                                on: device.config(dynamicType: dynamicType),
+                                on: device.config(theme: theme, dynamicType: dynamicType),
                                 precision: configuration.precision,
                                 perceptualPrecision: configuration.perceptualPrecision
                             ),
@@ -102,10 +102,14 @@ public enum VisualTesting {
         componentName: String,
         stateName: String,
         size: CGSize?,
+        disableAnimations: Bool,
         configuration: SnapshotConfiguration = .default,
         file: StaticString,
         line: UInt
     ) {
+        if disableAnimations { UIView.setAnimationsEnabled(false) }
+        defer { if disableAnimations { UIView.setAnimationsEnabled(true) } }
+
         let dir = snapshotDirectory(file: file, viewName: componentName)
 
         for theme in configuration.themes {
@@ -132,7 +136,8 @@ public enum VisualTesting {
                 of: vc,
                 as: .image(
                     precision: configuration.precision,
-                    perceptualPrecision: configuration.perceptualPrecision
+                    perceptualPrecision: configuration.perceptualPrecision,
+                    traits: UITraitCollection(userInterfaceStyle: theme.userInterfaceStyle)
                 ),
                 named: snapshotName,
                 snapshotDirectory: dir,
@@ -155,7 +160,7 @@ public enum VisualTesting {
             themes: configuration.themes,
             locales: [],
             inNavigation: false,
-            disableAnimations: false,
+            disableAnimations: disableAnimations,
             file: file
         )
     }
@@ -189,10 +194,7 @@ public enum VisualTesting {
             .environment(\.dynamicTypeSize, dynamicType.dynamicTypeSize)
 
         let hostingController = UIHostingController(rootView: localized)
-        hostingController.view.frame = CGRect(
-            origin: .zero,
-            size: device.config.size ?? CGSize(width: 393, height: 852)
-        )
+        hostingController.view.frame = CGRect(origin: .zero, size: device.size)
         hostingController.view.layoutIfNeeded()
         return hostingController
     }

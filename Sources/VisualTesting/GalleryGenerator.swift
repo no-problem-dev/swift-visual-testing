@@ -11,22 +11,25 @@ extension VisualTesting {
     /// - Parameters:
     ///   - catalog: The catalog to render.
     ///   - outputPath: Where the HTML file is written.
-    public static func generateGallery(catalog: SnapshotCatalog, outputPath: String) {
+    /// - Throws: ``VisualTestingError/writeFailed(path:underlying:)`` if the page cannot be written.
+    ///   The gallery is the artifact this package exists to produce, so a caller that gets no error
+    ///   has a page on disk.
+    public static func generateGallery(catalog: SnapshotCatalog, outputPath: String) throws {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
-        guard let jsonData = try? encoder.encode(catalog),
-              let jsonString = String(data: jsonData, encoding: .utf8) else {
-            return
-        }
-
-        let html = buildHTML(catalogJSON: jsonString, catalog: catalog)
 
         let outputURL = URL(fileURLWithPath: outputPath)
-        try? FileManager.default.createDirectory(
-            at: outputURL.deletingLastPathComponent(),
-            withIntermediateDirectories: true
-        )
-        try? html.write(to: outputURL, atomically: true, encoding: .utf8)
+        do {
+            let jsonData = try encoder.encode(catalog)
+            let html = buildHTML(catalogJSON: String(decoding: jsonData, as: UTF8.self), catalog: catalog)
+            try FileManager.default.createDirectory(
+                at: outputURL.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            try html.write(to: outputURL, atomically: true, encoding: .utf8)
+        } catch {
+            throw VisualTestingError.writeFailed(path: outputPath, underlying: error)
+        }
     }
 
     // MARK: - Private

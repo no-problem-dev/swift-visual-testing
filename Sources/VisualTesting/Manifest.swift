@@ -6,13 +6,17 @@ import Foundation
 ///
 /// One file per view or component. `generateCatalog(rootDirectory:outputPath:)` is what gathers them
 /// into a root `SnapshotCatalog`.
+///
+/// **Every field is a function of what was captured, and nothing records when.** This file is
+/// committed next to the reference images, so anything that changed on each run — a wall-clock
+/// timestamp, most of all — would leave the working tree dirty after every test run and teach the
+/// team to throw snapshot output away without reading it. A dirty `manifest.json` now means the set
+/// of images changed.
 public struct SnapshotManifest: Codable, Sendable {
     /// The name, which is also the directory name under `__Snapshots__`.
     public var name: String
     /// Which capture shape produced this file; it decides whether entries carry a device and locale.
     public var type: SnapshotType
-    /// ISO 8601 timestamp of the last write. Rewritten on every assertion, not only on change.
-    public var generatedAt: String
     /// Keyed by state name, such as `"loaded"` or `"empty"`; each value lists that state's images.
     public var states: [String: StateManifest]
     /// Path from the catalog root to this directory. Nil on disk; `generateCatalog` fills it in.
@@ -23,14 +27,12 @@ public struct SnapshotManifest: Codable, Sendable {
     public init(
         name: String,
         type: SnapshotType,
-        generatedAt: String,
         states: [String: StateManifest],
         basePath: String? = nil,
         category: String? = nil
     ) {
         self.name = name
         self.type = type
-        self.generatedAt = generatedAt
         self.states = states
         self.basePath = basePath
         self.category = category
@@ -93,6 +95,9 @@ public struct SnapshotCatalog: Codable, Sendable {
     /// Schema version of this file, currently `"1.0"`; readers should check it before trusting fields.
     public var version: String
     /// ISO 8601 timestamp of when the catalog was assembled.
+    ///
+    /// This one stays: the catalog is regenerated on demand from the manifests and is not meant to be
+    /// committed, so knowing when a gallery was built costs nobody a dirty working tree.
     public var generatedAt: String
     /// The axes actually observed, which is what the gallery builds its filter chips from.
     public var configuration: CatalogConfiguration

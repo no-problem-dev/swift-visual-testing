@@ -50,11 +50,16 @@ public macro ComponentSnapshot(width: CGFloat? = nil, height: CGFloat? = nil) =
     #externalMacro(module: "VisualTestingMacros", type: "ComponentSnapshotMacro")
 
 /// Wraps the view in a `NavigationStack` before capture, so the bar is part of the image.
+///
+/// Only for `@Snapshot`. On a `@ComponentSnapshot` it is a compile error: a component is captured
+/// without a device frame, so there is no navigation bar for the image to hold.
 @attached(peer)
 public macro InNavigation() =
     #externalMacro(module: "VisualTestingMacros", type: "InNavigationMacro")
 
 /// Turns UIKit animations off for the capture, for views that would otherwise be caught mid-transition.
+///
+/// Applies to both capture shapes. On a function marked with neither it is a compile error.
 @attached(peer)
 public macro WithoutAnimation() =
     #externalMacro(module: "VisualTestingMacros", type: "WithoutAnimationMacro")

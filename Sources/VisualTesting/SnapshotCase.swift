@@ -29,7 +29,7 @@ public struct SnapshotCase: Sendable, CustomTestStringConvertible {
         /// A full-screen view, captured across the device × theme × locale matrix.
         case view(inNavigation: Bool, disableAnimations: Bool)
         /// A component, captured on the theme axis alone; a nil dimension falls back to intrinsic size.
-        case component(width: CGFloat?, height: CGFloat?)
+        case component(width: CGFloat?, height: CGFloat?, disableAnimations: Bool)
     }
 
     public let viewName: String
@@ -73,7 +73,7 @@ public struct SnapshotCase: Sendable, CustomTestStringConvertible {
                 file: file,
                 line: line
             )
-        case .component(let width, let height):
+        case .component(let width, let height, let disableAnimations):
             let size: CGSize? = if let width, let height {
                 CGSize(width: width, height: height)
             } else {
@@ -84,6 +84,7 @@ public struct SnapshotCase: Sendable, CustomTestStringConvertible {
                 componentName: viewName,
                 stateName: stateName,
                 size: size,
+                disableAnimations: disableAnimations,
                 configuration: configuration,
                 file: file,
                 line: line

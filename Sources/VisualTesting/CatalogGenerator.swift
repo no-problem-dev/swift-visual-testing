@@ -1,5 +1,6 @@
 #if canImport(UIKit)
 import Foundation
+import Testing
 
 extension VisualTesting {
 
@@ -9,6 +10,9 @@ extension VisualTesting {
     ///
     /// Read-modify-write per call, so a suite spread over several assertions accumulates rather than
     /// overwrites. Entries already present under the same file path are left alone.
+    ///
+    /// Runs inside an assertion, so a manifest that cannot be read or written is reported the same
+    /// way a mismatched image is — as a recorded issue, not as a silently partial result.
     static func updateManifest(
         viewName: String,
         type: SnapshotType,
@@ -28,18 +32,19 @@ extension VisualTesting {
             .appendingPathComponent(viewName)
         let manifestURL = viewDir.appendingPathComponent("manifest.json")
 
-        // Read existing manifest or create new
-        var manifest: SnapshotManifest
-        if let data = try? Data(contentsOf: manifestURL),
-           let existing = try? JSONDecoder().decode(SnapshotManifest.self, from: data) {
-            manifest = existing
-        } else {
-            manifest = SnapshotManifest(
-                name: viewName,
-                type: type,
-                generatedAt: iso8601Now(),
-                states: [:]
-            )
+        // Read existing manifest, or start one for a suite captured for the first time.
+        var manifest = SnapshotManifest(name: viewName, type: type, states: [:])
+        if FileManager.default.fileExists(atPath: manifestURL.path) {
+            do {
+                let data = try Data(contentsOf: manifestURL)
+                manifest = try JSONDecoder().decode(SnapshotManifest.self, from: data)
+            } catch {
+                Issue.record(Comment(rawValue: """
+                    \(viewName): manifest.json exists but could not be read, so the states other \
+                    assertions recorded are being dropped — \
+                    \(VisualTestingError.manifestUnreadable(path: manifestURL.path, underlying: error))
+                    """))
+            }
         }
 
         // Build snapshot entries for this state + device
@@ -84,6 +89,9 @@ extension VisualTesting {
             for entry in entries where !existingFiles.contains(entry.file) {
                 existing.snapshots.append(entry)
             }
+            // The flags describe how this state is captured now, not how it was captured first.
+            existing.inNavigation = inNavigation
+            existing.disableAnimations = disableAnimations
             manifest.states[stateName] = existing
         } else {
             manifest.states[stateName] = StateManifest(
@@ -93,14 +101,17 @@ extension VisualTesting {
             )
         }
 
-        manifest.generatedAt = iso8601Now()
-
         // Write manifest
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        if let data = try? encoder.encode(manifest) {
-            try? FileManager.default.createDirectory(at: viewDir, withIntermediateDirectories: true)
-            try? data.write(to: manifestURL)
+        do {
+            let data = try encoder.encode(manifest)
+            try FileManager.default.createDirectory(at: viewDir, withIntermediateDirectories: true)
+            try data.write(to: manifestURL)
+        } catch {
+            Issue.record(Comment(rawValue: String(
+                describing: VisualTestingError.writeFailed(path: manifestURL.path, underlying: error)
+            )))
         }
     }
 
@@ -108,14 +119,16 @@ extension VisualTesting {
 
     /// Walks a directory tree, merging every `manifest.json` it finds into one root catalog.
     ///
-    /// Failures are silent: an unreadable or malformed manifest is skipped, and a catalog that cannot
-    /// be written is still returned, so the result is a value to inspect rather than a success signal.
+    /// A manifest that cannot be read is an error rather than a skip. Skipping one drops its images
+    /// from the gallery, and a gallery missing a view looks exactly like a view nobody captured.
     ///
     /// - Parameter rootDirectory: Directory to scan; it holds the `__Snapshots__` subdirectories.
     /// - Parameter outputPath: Where the catalog JSON is written.
-    /// - Returns: The catalog that was built, whether or not it reached disk.
+    /// - Returns: The catalog that was built and written.
+    /// - Throws: ``VisualTestingError`` if the root cannot be read, a manifest cannot be decoded, or
+    ///   the catalog cannot be written.
     @discardableResult
-    public static func generateCatalog(rootDirectory: String, outputPath: String) -> SnapshotCatalog {
+    public static func generateCatalog(rootDirectory: String, outputPath: String) throws -> SnapshotCatalog {
         let rootURL = URL(fileURLWithPath: rootDirectory)
         let fm = FileManager.default
 
@@ -129,12 +142,15 @@ extension VisualTesting {
         var totalImages = 0
 
         // Recursively find all manifest.json files
-        let manifestFiles = findManifestFiles(in: rootURL, fileManager: fm)
+        let manifestFiles = try findManifestFiles(in: rootURL, fileManager: fm)
 
         for manifestURL in manifestFiles {
-            guard let data = try? Data(contentsOf: manifestURL),
-                  var manifest = try? JSONDecoder().decode(SnapshotManifest.self, from: data) else {
-                continue
+            var manifest: SnapshotManifest
+            do {
+                let data = try Data(contentsOf: manifestURL)
+                manifest = try JSONDecoder().decode(SnapshotManifest.self, from: data)
+            } catch {
+                throw VisualTestingError.manifestUnreadable(path: manifestURL.path, underlying: error)
             }
 
             // Compute basePath: relative path from rootDirectory to the manifest's directory
@@ -188,10 +204,13 @@ extension VisualTesting {
 
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        if let data = try? encoder.encode(catalog) {
-            let outputURL = URL(fileURLWithPath: outputPath)
-            try? fm.createDirectory(at: outputURL.deletingLastPathComponent(), withIntermediateDirectories: true)
-            try? data.write(to: outputURL)
+        let outputURL = URL(fileURLWithPath: outputPath)
+        do {
+            let data = try encoder.encode(catalog)
+            try fm.createDirectory(at: outputURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try data.write(to: outputURL)
+        } catch {
+            throw VisualTestingError.writeFailed(path: outputPath, underlying: error)
         }
 
         return catalog
@@ -199,14 +218,14 @@ extension VisualTesting {
 
     // MARK: - Private Helpers
 
-    private static func findManifestFiles(in directory: URL, fileManager: FileManager) -> [URL] {
+    private static func findManifestFiles(in directory: URL, fileManager: FileManager) throws -> [URL] {
         var results: [URL] = []
         guard let enumerator = fileManager.enumerator(
             at: directory,
             includingPropertiesForKeys: [.isRegularFileKey],
             options: [.skipsHiddenFiles]
         ) else {
-            return results
+            throw VisualTestingError.directoryUnreadable(path: directory.path)
         }
 
         for case let fileURL as URL in enumerator {

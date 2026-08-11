@@ -145,7 +145,7 @@ final class SnapshotSuiteMacroTests: XCTestCase {
                         SnapshotCase(
                             viewName: "Card",
                             stateName: "level1",
-                            kind: .component(width: 340, height: 120),
+                            kind: .component(width: 340, height: 120, disableAnimations: false),
                             makeView: {
                                 AnyView(CardSnapshots().level1())
                             }
@@ -188,9 +188,53 @@ final class SnapshotSuiteMacroTests: XCTestCase {
                         SnapshotCase(
                             viewName: "Chip",
                             stateName: "basic",
-                            kind: .component(width: nil, height: nil),
+                            kind: .component(width: nil, height: nil, disableAnimations: false),
                             makeView: {
                                 AnyView(ChipSnapshots().basic())
+                            }
+                        )
+                    ]
+                }
+            }
+            """,
+            macros: testMacros
+        )
+        #else
+        throw XCTSkip("macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testComponentSnapshotHonoursWithoutAnimation() throws {
+        #if canImport(VisualTestingMacros)
+        assertMacroExpansion(
+            """
+            @SnapshotSuite("Card")
+            struct CardSnapshots {
+                @ComponentSnapshot(width: 340, height: 120)
+                @WithoutAnimation
+                func level1() -> some View {
+                    Card()
+                }
+
+            \(runner)
+            }
+            """,
+            expandedSource: """
+            struct CardSnapshots {
+                func level1() -> some View {
+                    Card()
+                }
+
+            \(runner)
+
+                nonisolated static var __snapshotCases: [SnapshotCase] {
+                    [
+                        SnapshotCase(
+                            viewName: "Card",
+                            stateName: "level1",
+                            kind: .component(width: 340, height: 120, disableAnimations: true),
+                            makeView: {
+                                AnyView(CardSnapshots().level1())
                             }
                         )
                     ]
@@ -249,7 +293,7 @@ final class SnapshotSuiteMacroTests: XCTestCase {
                         SnapshotCase(
                             viewName: "Mixed",
                             stateName: "part",
-                            kind: .component(width: 100, height: 50),
+                            kind: .component(width: 100, height: 50, disableAnimations: false),
                             makeView: {
                                 AnyView(MixedSnapshots().part())
                             }
@@ -362,6 +406,136 @@ final class SnapshotSuiteMacroTests: XCTestCase {
                     line: 1,
                     column: 1,
                     severity: .error
+                )
+            ],
+            macros: testMacros
+        )
+        #else
+        throw XCTSkip("macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    /// A runner whose only mention of `__snapshotCases` is inside a comment runs nothing.
+    ///
+    /// Source text carries its comments, so a text search would accept this suite and take away the
+    /// one diagnostic that tells the author their cases are never executed.
+    func testCommentedOutRunnerDoesNotCountAsRunner() throws {
+        #if canImport(VisualTestingMacros)
+        assertMacroExpansion(
+            """
+            @SnapshotSuite("SettingsView")
+            struct SettingsSnapshots {
+                @Snapshot
+                func loaded() -> some View {
+                    SettingsView()
+                }
+
+                @Test
+                func snapshots() {
+                    // for snapshotCase in Self.__snapshotCases { snapshotCase.run() }
+                }
+            }
+            """,
+            expandedSource: """
+            struct SettingsSnapshots {
+                func loaded() -> some View {
+                    SettingsView()
+                }
+
+                @Test
+                func snapshots() {
+                    // for snapshotCase in Self.__snapshotCases { snapshotCase.run() }
+                }
+
+                nonisolated static var __snapshotCases: [SnapshotCase] {
+                    [
+                        SnapshotCase(
+                            viewName: "SettingsView",
+                            stateName: "loaded",
+                            kind: .view(inNavigation: false, disableAnimations: false),
+                            makeView: {
+                                AnyView(SettingsSnapshots().loaded())
+                            }
+                        )
+                    ]
+                }
+            }
+            """,
+            diagnostics: [
+                DiagnosticSpec(
+                    message: "@SnapshotSuite requires a hand-written runner test. Add to the struct: "
+                        + "@Test func snapshots() { for snapshotCase in Self.__snapshotCases { snapshotCase.run() } }",
+                    line: 1,
+                    column: 1,
+                    severity: .error
+                )
+            ],
+            macros: testMacros
+        )
+        #else
+        throw XCTSkip("macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testInNavigationOnComponentIsAnError() throws {
+        #if canImport(VisualTestingMacros)
+        assertMacroExpansion(
+            """
+            struct CardSnapshots {
+                @ComponentSnapshot(width: 340, height: 120)
+                @InNavigation
+                func level1() -> some View {
+                    Card()
+                }
+            }
+            """,
+            expandedSource: """
+            struct CardSnapshots {
+                func level1() -> some View {
+                    Card()
+                }
+            }
+            """,
+            diagnostics: [
+                DiagnosticSpec(
+                    message: "@InNavigation cannot apply to @ComponentSnapshot: a component is "
+                        + "captured without a device frame, so there is no navigation bar in the "
+                        + "image. Remove @InNavigation, or capture this state with @Snapshot",
+                    line: 3,
+                    column: 5
+                )
+            ],
+            macros: testMacros
+        )
+        #else
+        throw XCTSkip("macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testMarkerWithoutCaptureAttributeIsAnError() throws {
+        #if canImport(VisualTestingMacros)
+        assertMacroExpansion(
+            """
+            struct CardSnapshots {
+                @WithoutAnimation
+                func level1() -> some View {
+                    Card()
+                }
+            }
+            """,
+            expandedSource: """
+            struct CardSnapshots {
+                func level1() -> some View {
+                    Card()
+                }
+            }
+            """,
+            diagnostics: [
+                DiagnosticSpec(
+                    message: "@WithoutAnimation does nothing on its own; it only applies to a "
+                        + "function marked @Snapshot or @ComponentSnapshot",
+                    line: 2,
+                    column: 5
                 )
             ],
             macros: testMacros
