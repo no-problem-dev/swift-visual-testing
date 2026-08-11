@@ -55,7 +55,7 @@ generating the HTML gallery.
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/no-problem-dev/swift-visual-testing.git", from: "2.0.0")
+    .package(url: "https://github.com/no-problem-dev/swift-visual-testing.git", from: "3.0.0")
 ]
 ```
 
