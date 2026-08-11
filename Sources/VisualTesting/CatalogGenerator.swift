@@ -5,8 +5,10 @@ extension VisualTesting {
 
     // MARK: - Per-View Manifest Update
 
-    /// アサーションごとに per-view `manifest.json` を更新する。
-    /// `__Snapshots__/{viewName}/manifest.json` を読み込み・変更・書き込みする。
+    /// Folds this assertion's entries into `__Snapshots__/{viewName}/manifest.json`.
+    ///
+    /// Read-modify-write per call, so a suite spread over several assertions accumulates rather than
+    /// overwrites. Entries already present under the same file path are left alone.
     static func updateManifest(
         viewName: String,
         type: SnapshotType,
@@ -48,7 +50,7 @@ extension VisualTesting {
             for theme in themes {
                 for locale in locales {
                     for dynamicType in dynamicTypes {
-                        // 既定の文字サイズは名前に出さない（`Assertions.snapshotName` と同じ規則）。
+                        // Default text size is absent from the name, matching `Assertions.snapshotName`.
                         let suffix = dynamicType == .standard ? "" : "_\(dynamicType.rawValue)"
                         let fileName = "\(device.rawValue)/\(stateName).\(theme.rawValue)_\(locale)\(suffix).png"
                         entries.append(SnapshotEntry(
@@ -104,11 +106,14 @@ extension VisualTesting {
 
     // MARK: - Root Catalog Generation
 
-    /// 全 `manifest.json` を集約してルートの `snapshot-catalog.json` を生成する。
+    /// Walks a directory tree, merging every `manifest.json` it finds into one root catalog.
     ///
-    /// - Parameter rootDirectory: スキャン対象の `__Snapshots__` サブディレクトリを含むディレクトリ。
-    /// - Parameter outputPath: カタログ JSON ファイルの出力先パス。
-    /// - Returns: 生成された `SnapshotCatalog`。
+    /// Failures are silent: an unreadable or malformed manifest is skipped, and a catalog that cannot
+    /// be written is still returned, so the result is a value to inspect rather than a success signal.
+    ///
+    /// - Parameter rootDirectory: Directory to scan; it holds the `__Snapshots__` subdirectories.
+    /// - Parameter outputPath: Where the catalog JSON is written.
+    /// - Returns: The catalog that was built, whether or not it reached disk.
     @discardableResult
     public static func generateCatalog(rootDirectory: String, outputPath: String) -> SnapshotCatalog {
         let rootURL = URL(fileURLWithPath: rootDirectory)
@@ -218,7 +223,7 @@ extension VisualTesting {
         return formatter.string(from: Date())
     }
 
-    /// `base` から `target` への相対パスを返す。
+    /// The path from `base` to `target`, or the absolute path when `target` sits outside `base`.
     private static func relativePath(from base: URL, to target: URL) -> String {
         let basePath = base.standardizedFileURL.path
         let targetPath = target.standardizedFileURL.path
@@ -230,11 +235,10 @@ extension VisualTesting {
         return relative
     }
 
-    /// マニフェストディレクトリパスからカテゴリを抽出する。
+    /// The grouping name for a manifest, taken from the directory just above `__Snapshots__`.
     ///
-    /// パス内の `__Snapshots__` を探し、その直前のディレクトリ名を返す。
     /// - `Views/Dashboard/__Snapshots__/DashboardView` → `"Dashboard"`
-    /// - `DesignSystem/__Snapshots__/Card` → `nil`（サブカテゴリのないトップレベルセクション）
+    /// - `DesignSystem/__Snapshots__/Card` → `nil` (a top-level section with no subcategory)
     private static func extractCategory(from manifestDir: URL, root: URL) -> String? {
         let rel = relativePath(from: root, to: manifestDir)
         let components = rel.split(separator: "/").map(String.init)

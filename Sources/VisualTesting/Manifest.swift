@@ -2,23 +2,22 @@ import Foundation
 
 // MARK: - Per-View Manifest
 
-/// `__Snapshots__/{viewName}/manifest.json` に書き込まれる per-view スナップショットマニフェスト。
+/// What a single view or component captured, written beside its PNGs as `manifest.json`.
 ///
-/// `VisualTesting` を通じて実行された View またはコンポーネントごとに、PNG ファイルと並んで
-/// 1 つのマニフェストが生成される。`generateCatalog(rootDirectory:outputPath:)` はこれらを
-/// 集約してルートの `SnapshotCatalog` を構築する。
+/// One file per view or component. `generateCatalog(rootDirectory:outputPath:)` is what gathers them
+/// into a root `SnapshotCatalog`.
 public struct SnapshotManifest: Codable, Sendable {
-    /// `__Snapshots__` 配下のディレクトリ名と一致する View またはコンポーネント名。
+    /// The name, which is also the directory name under `__Snapshots__`.
     public var name: String
-    /// このマニフェストが全画面 View かコンポーネントかを示す。
+    /// Which capture shape produced this file; it decides whether entries carry a device and locale.
     public var type: SnapshotType
-    /// 最終書き込み時刻の ISO 8601 タイムスタンプ。
+    /// ISO 8601 timestamp of the last write. Rewritten on every assertion, not only on change.
     public var generatedAt: String
-    /// ステート名をキーに（例: `"loaded"`、`"empty"`）、各エントリが PNG ファイル一覧を持つ。
+    /// Keyed by state name, such as `"loaded"` or `"empty"`; each value lists that state's images.
     public var states: [String: StateManifest]
-    /// カタログルートからこのマニフェストのディレクトリへの相対パス。`generateCatalog` が設定する。
+    /// Path from the catalog root to this directory. Nil on disk; `generateCatalog` fills it in.
     public var basePath: String?
-    /// ディレクトリ階層から導出したグループカテゴリ。`generateCatalog` が設定する。
+    /// Grouping taken from the directory above `__Snapshots__`. Nil on disk; `generateCatalog` fills it in.
     public var category: String?
 
     public init(
@@ -38,21 +37,21 @@ public struct SnapshotManifest: Codable, Sendable {
     }
 }
 
-/// 全画面 View のスナップショットスイートとコンポーネント（デザインシステム要素）スイートを区別する。
+/// Tells a full-screen view suite apart from a design-system component suite.
 public enum SnapshotType: String, Codable, Sendable {
-    /// デバイス × テーマ × ロケールのマトリクスでキャプチャした全画面 View スナップショット。
+    /// Captured across the device × theme × locale matrix.
     case view
-    /// テーマ軸のみでキャプチャしたコンポーネントスナップショット（デバイスフレーム・ロケールなし）。
+    /// Captured on the theme axis alone — no device frame, no locale.
     case component
 }
 
-/// View またはコンポーネントスイート内の 1 つの名前付きステートに対するスナップショットメタデータ。
+/// One named state of a suite, and every image captured for it.
 public struct StateManifest: Codable, Sendable {
-    /// キャプチャ時に `NavigationStack` でラップしたかどうか。
+    /// Whether the view was wrapped in a `NavigationStack` when captured.
     public var inNavigation: Bool
-    /// キャプチャ時に UIKit アニメーションを無効化したかどうか。
+    /// Whether UIKit animations were off when captured.
     public var disableAnimations: Bool
-    /// このステートでキャプチャした全 PNG 画像エントリ。
+    /// Every image captured for this state, one per matrix combination.
     public var snapshots: [SnapshotEntry]
 
     public init(inNavigation: Bool, disableAnimations: Bool, snapshots: [SnapshotEntry]) {
@@ -62,17 +61,17 @@ public struct StateManifest: Codable, Sendable {
     }
 }
 
-/// `StateManifest` 内の 1 枚の PNG 画像エントリ。
+/// One captured image, and the matrix position it came from.
 public struct SnapshotEntry: Codable, Sendable {
-    /// デバイス識別子（例: `"iPhone16"`）。コンポーネントスナップショットでは `nil`。
+    /// Device identifier such as `"iPhone16"`; `nil` for components, which have no device frame.
     public var device: String?
-    /// テーマの raw value（例: `"light"` または `"dark"`）。
+    /// Theme raw value, `"light"` or `"dark"` — the one axis every capture has.
     public var theme: String
-    /// ロケール識別子（例: `"en"`、`"ja"`）。コンポーネントスナップショットでは `nil`。
+    /// Locale identifier such as `"en"` or `"ja"`; `nil` for components.
     public var locale: String?
-    /// 文字サイズの raw value（例: `"accessibility3"`）。既定の文字サイズでは `nil`。
+    /// Text size raw value such as `"accessibility3"`; `nil` at the default size, matching the file name.
     public var dynamicType: String?
-    /// マニフェストのディレクトリから PNG 画像への相対ファイルパス。
+    /// Path to the image, relative to this manifest's directory.
     public var file: String
 
     public init(device: String?, theme: String, locale: String?, dynamicType: String? = nil, file: String) {
@@ -86,22 +85,22 @@ public struct SnapshotEntry: Codable, Sendable {
 
 // MARK: - Root Catalog
 
-/// ディレクトリツリー内の全 per-view `SnapshotManifest` を集約したルートカタログ。
+/// Every manifest under a directory tree, gathered into one value.
 ///
-/// `VisualTesting.generateCatalog(rootDirectory:outputPath:)` が生成し、
-/// `VisualTesting.generateGallery(catalog:outputPath:)` がインタラクティブな HTML レポートを構築する際に使用する。
+/// Built by `VisualTesting.generateCatalog(rootDirectory:outputPath:)` and consumed by
+/// `VisualTesting.generateGallery(catalog:outputPath:)`.
 public struct SnapshotCatalog: Codable, Sendable {
-    /// カタログスキーマバージョン（現在は `"1.0"`）。
+    /// Schema version of this file, currently `"1.0"`; readers should check it before trusting fields.
     public var version: String
-    /// カタログ生成時刻の ISO 8601 タイムスタンプ。
+    /// ISO 8601 timestamp of when the catalog was assembled.
     public var generatedAt: String
-    /// 全マニフェストを横断して検出したデバイス・テーマ・ロケールのセット。
+    /// The axes actually observed, which is what the gallery builds its filter chips from.
     public var configuration: CatalogConfiguration
-    /// View・コンポーネント・画像の集計数。
+    /// Counts for the gallery header, so it need not walk the manifests to show totals.
     public var summary: CatalogSummary
-    /// 名前順にソートされた全 View マニフェスト。
+    /// View manifests, sorted by name.
     public var views: [SnapshotManifest]
-    /// 名前順にソートされた全コンポーネントマニフェスト。
+    /// Component manifests, sorted by name.
     public var components: [SnapshotManifest]
 
     public init(
@@ -121,13 +120,13 @@ public struct SnapshotCatalog: Codable, Sendable {
     }
 }
 
-/// カタログ内の全マニフェストを横断して検出したデバイス・テーマ・ロケールのスーパーセット。
+/// The union of every axis value seen in a catalog — what was captured, not what was configured.
 public struct CatalogConfiguration: Codable, Sendable {
-    /// カタログに含まれる全デバイス識別子（例: `["iPhone16", "iPhoneSE"]`）。
+    /// Every device identifier present, sorted.
     public var devices: [String]
-    /// カタログに含まれる全テーマ raw value（例: `["dark", "light"]`）。
+    /// Every theme raw value present, sorted.
     public var themes: [String]
-    /// カタログに含まれる全ロケール識別子（例: `["en", "ja"]`）。
+    /// Every locale identifier present, sorted. Empty when the catalog holds components only.
     public var locales: [String]
 
     public init(devices: [String], themes: [String], locales: [String]) {
@@ -137,17 +136,17 @@ public struct CatalogConfiguration: Codable, Sendable {
     }
 }
 
-/// `SnapshotCatalog` の集計統計。
+/// Totals for a catalog, counted while the manifests were being merged.
 public struct CatalogSummary: Codable, Sendable {
-    /// 個別の View スイート数。
+    /// Number of view suites, not of images.
     public var totalViews: Int
-    /// 個別のコンポーネントスイート数。
+    /// Number of component suites, not of images.
     public var totalComponents: Int
-    /// 全スイートの PNG 画像合計枚数。
+    /// Images across every suite — the number that grows fastest when an axis is added.
     public var totalImages: Int
-    /// デバイス識別子をキーとした画像枚数。
+    /// Image count per device identifier.
     public var byDevice: [String: Int]
-    /// テーマ raw value をキーとした画像枚数。
+    /// Image count per theme raw value.
     public var byTheme: [String: Int]
 
     public init(totalViews: Int, totalComponents: Int, totalImages: Int, byDevice: [String: Int], byTheme: [String: Int]) {

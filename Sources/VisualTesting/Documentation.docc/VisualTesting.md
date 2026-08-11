@@ -1,60 +1,31 @@
 # ``VisualTesting``
 
-SwiftUI View とデザインシステムコンポーネント向けのマクロ駆動スナップショットテストライブラリ。
+Macro-driven snapshot testing for SwiftUI views and design-system components.
 
 ## Overview
 
-`VisualTesting` は、デバイス × テーマ × ロケールの全スナップショットマトリクスを
-1 つの struct アノテーションから自動化する。何を（what）キャプチャするかを記述するだけで、
-どのように（how）実行するかはマクロとアサーションエンジンが処理する。
+A snapshot suite describes *what* to capture. One annotation on a struct, one function per state, and
+the matrix — device × theme × locale × text size — is expanded for you; the macro and the assertion
+engine decide *how* each image is produced and where it lands.
 
-```swift
-@SnapshotSuite("SettingsView")
-@MainActor
-struct SettingsViewSnapshots {
+The matrix multiplies, so its default is deliberately small: three devices, light and dark, `en` and
+`ja`, at the standard text size. Twelve images per state. The extra axes — the iPadOS 26 window widths
+and the accessibility text sizes — are opt-in, which is what keeps adding one from silently changing
+the image count of every suite that already exists.
 
-    @Snapshot
-    func loaded() -> some View {
-        SettingsView(model: .preview)
-    }
+Two capture shapes exist because two things are being tested. A full-screen view is worth seeing on
+every device and in every language. A button is not: components are captured on the theme axis alone,
+with no device frame, at a size you give them.
 
-    @Snapshot
-    @InNavigation
-    func inNavigation() -> some View {
-        SettingsView(model: .preview)
-    }
-
-    @Test func snapshots() {
-        for snapshotCase in Self.__snapshotCases {
-            snapshotCase.run()
-        }
-    }
-}
-```
-
-テストスイートを実行すると、デバイス（iPhone 16・iPhone SE・iPad Pro 11）、テーマ（ライト・ダーク）、
-ロケール（en・ja）の全組み合わせの PNG が `__Snapshots__/SettingsView/` に保存される。
-
-### 主要な型
-
-| シンボル | 役割 |
-|---|---|
-| `SnapshotSuite(_:)` | struct をスナップショットテストスイートとしてマーク付けし、ケースを収集する |
-| `Snapshot()` | ファクトリ関数を全画面 View スナップショット対象としてマーク付けする |
-| `ComponentSnapshot(width:height:)` | ファクトリ関数をコンポーネント（テーマ軸のみ）スナップショット対象としてマーク付けする |
-| `InNavigation()` | キャプチャ時に `NavigationStack` で View をラップする |
-| `WithoutAnimation()` | キャプチャ中に UIKit アニメーションを無効化する |
-| `SnapshotCase` | 1 つのスナップショットケースのランタイム表現。`run()` を駆動する |
-| `SnapshotConfiguration` | デバイス × テーマ × ロケールのマトリクスを設定する |
-| `ThemeApplicable` | カスタムテーマシステムを注入するためのプロトコル |
+Start at <doc:GettingStarted>.
 
 ## Topics
 
-### 入門
+### Getting started
 
 - <doc:GettingStarted>
 
-### マクロ
+### Defining a suite
 
 - ``SnapshotSuite(_:)``
 - ``Snapshot()``
@@ -62,25 +33,31 @@ struct SettingsViewSnapshots {
 - ``InNavigation()``
 - ``WithoutAnimation()``
 
-### ランタイム
+### Running the cases
 
 - ``SnapshotCase``
 - ``SnapshotCase/Kind``
 - ``SnapshotCase/run(configuration:file:line:)``
 
-### 設定
+### Choosing the matrix
 
 - ``SnapshotConfiguration``
 - ``SnapshotDevice``
 - ``SnapshotTheme``
+- ``SnapshotDynamicType``
 
-### テーマ統合
+### Applying a theme
 
 - ``ThemeApplicable``
 - ``DefaultThemeApplicable``
 - ``VisualTesting/themeApplicable``
 
-### カタログとギャラリー
+### Asserting directly
+
+- ``VisualTesting/assertViewSnapshot(of:viewName:stateName:inNavigation:disableAnimations:configuration:file:line:)``
+- ``VisualTesting/assertComponentSnapshot(of:componentName:stateName:size:configuration:file:line:)``
+
+### Catalog and gallery
 
 - ``VisualTesting/generateCatalog(rootDirectory:outputPath:)``
 - ``VisualTesting/generateGallery(catalog:outputPath:)``

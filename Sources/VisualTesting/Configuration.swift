@@ -5,18 +5,17 @@ import SnapshotTesting
 
 // MARK: - SnapshotDevice
 
-/// スナップショットテスト用のデバイス設定。
+/// A screen geometry to render into: point size, safe area, and pixel density.
 public enum SnapshotDevice: String, CaseIterable, Sendable {
     case iPhone16 = "iPhone16"
     case iPhoneSE = "iPhoneSE"
     case iPadPro11 = "iPadPro11"
-    /// iPad Pro 11 の画面を横に並べたときの、幅がおよそ半分になるウィンドウ（1194 の 1/2）。
+    /// A window about half the landscape width of an iPad Pro 11 (half of 1194pt).
     case iPadPro11Half = "iPadPro11Half"
-    /// 同じく幅がおよそ 1/3 になるウィンドウ（1194 の 1/3）。
+    /// The same window at about a third of that width (a third of 1194pt).
     case iPadPro11Third = "iPadPro11Third"
 
-    /// デバイス固有の画面サイズ・セーフエリア・ピクセル密度を定義した `ViewImageConfig`。
-    /// スナップショット撮影時にこの設定でビューをレンダリングする。
+    /// The screen size, safe area, and pixel density the view is rendered under.
     public var config: ViewImageConfig {
         switch self {
         case .iPhone16:
@@ -53,11 +52,11 @@ public enum SnapshotDevice: String, CaseIterable, Sendable {
         }
     }
 
-    /// `config` に文字サイズの trait を重ねた設定。
+    /// The same geometry with a text-size trait layered on top.
     ///
-    /// SwiftUI 側は `\.dynamicTypeSize` 環境で追随するが、`ViewImageConfig` の trait にも
-    /// 同じ大きさを載せないと、**UIKit が寸法を計算する部分（ナビゲーションバー・
-    /// リスト行の最小高）だけが既定の大きさのまま**になり、実機と違う絵が撮れる。
+    /// SwiftUI follows the `\.dynamicTypeSize` environment on its own, but unless the same size
+    /// is also put on the `ViewImageConfig` traits, **the parts UIKit measures — navigation bars,
+    /// minimum list row heights — stay at the default size** and the image stops matching a device.
     public func config(dynamicType: SnapshotDynamicType) -> ViewImageConfig {
         var config = self.config
         config.traits = UITraitCollection(traitsFrom: [
@@ -67,17 +66,17 @@ public enum SnapshotDevice: String, CaseIterable, Sendable {
         return config
     }
 
-    /// iPad のウィンドウ幅だけを変えた設定。
+    /// An iPad geometry with only the window width changed.
     ///
-    /// iPadOS 26 で Split View / Slide Over が廃止され、**自由にリサイズできるウィンドウ**に
-    /// なった。HIG は画面の 1/2・1/3・1/4 の各幅で検証せよと書いている。
-    /// 幅は横向き（1194pt）を基準に取る —— 縦向きの 1/3 は 278pt で、iPadOS が許す
-    /// ウィンドウの最小幅を下回るため、実際には作れない面を撮ることになる。
+    /// iPadOS 26 dropped Split View and Slide Over in favour of **freely resizable windows**, and the
+    /// HIG asks for verification at 1/2, 1/3, and 1/4 of the screen. The widths are taken from the
+    /// landscape screen (1194pt) — a third of the portrait width is 278pt, below the minimum window
+    /// width iPadOS allows, so it would capture a surface no user can produce.
     ///
-    /// **どちらの幅も horizontal size class は compact になる**（iPad で regular に
-    /// なるのはおよそ 768pt 以上）。つまりここで見えるのは、iPad なのに iPhone と同じ
-    /// レイアウト分岐に落ちたときの姿で、`readableContentGuide` 相当の幅制限や
-    /// regular 前提の 2 カラムはここでは効かない。
+    /// **Both widths land in the compact horizontal size class** (an iPad turns regular at roughly
+    /// 768pt and up). What these show is therefore the iPad falling into the same layout branch as an
+    /// iPhone: width limits along the lines of `readableContentGuide`, and two-column layouts that
+    /// assume regular, do not apply here.
     private func iPadWindow(width: CGFloat) -> ViewImageConfig {
         ViewImageConfig(
             safeArea: UIEdgeInsets(top: 24, left: 0, bottom: 20, right: 0),
@@ -92,20 +91,21 @@ public enum SnapshotDevice: String, CaseIterable, Sendable {
 
 // MARK: - SnapshotDynamicType
 
-/// スナップショットテスト用の文字サイズ設定。
+/// A text size to capture at.
 ///
-/// タイポグラフィが Dynamic Type に追随するようになると、**大きい文字で崩れるかどうか**が
-/// 実際に撮れるようになる。行の高さ・アイコンとの垂直中心・省略の入り方はここで壊れる。
+/// Once typography follows Dynamic Type, **whether large text breaks the layout** becomes something
+/// an image can show. Line heights, vertical centring against icons, and where truncation lands are
+/// what break here.
 public enum SnapshotDynamicType: String, CaseIterable, Sendable {
-    /// 既定の文字サイズ（`.large`）。この軸だけのときはファイル名に現れない。
+    /// The default size (`.large`). A suite that captures only this size gets no suffix in file names.
     case standard
-    /// アクセシビリティサイズの中ほど（`.accessibility3`）。
+    /// The middle of the accessibility sizes (`.accessibility3`).
     ///
-    /// 最大（`.accessibility5`）ではなくここを既定の検査点にするのは、
-    /// **最大は何をしても崩れる**ので回帰の判別に使えないから。
+    /// The checkpoint is here rather than at the largest size (`.accessibility5`) because
+    /// **the largest size breaks no matter what**, which makes it useless for spotting a regression.
     case accessibility3
 
-    /// SwiftUI 環境に流す文字サイズ。
+    /// The size SwiftUI lays out with, fed through the environment.
     public var dynamicTypeSize: DynamicTypeSize {
         switch self {
         case .standard: return .large
@@ -113,7 +113,7 @@ public enum SnapshotDynamicType: String, CaseIterable, Sendable {
         }
     }
 
-    /// UIKit 側の寸法計算に効かせる content size category。
+    /// The size UIKit measures its own chrome with; set alongside `dynamicTypeSize` or the two disagree.
     public var contentSizeCategory: UIContentSizeCategory {
         switch self {
         case .standard: return .large
@@ -124,12 +124,12 @@ public enum SnapshotDynamicType: String, CaseIterable, Sendable {
 
 // MARK: - SnapshotTheme
 
-/// スナップショットテスト用のテーマ設定。
+/// A light or dark appearance to capture. How it reaches the view is decided by `ThemeApplicable`.
 public enum SnapshotTheme: String, CaseIterable, Sendable {
     case light
     case dark
 
-    /// テーマに対応する `UIUserInterfaceStyle`。スナップショット撮影時に `UITraitCollection` へ適用する。
+    /// The UIKit appearance matching this theme, for callers that build their own `UITraitCollection`.
     public var userInterfaceStyle: UIUserInterfaceStyle {
         switch self {
         case .light: return .light
@@ -140,19 +140,19 @@ public enum SnapshotTheme: String, CaseIterable, Sendable {
 
 // MARK: - SnapshotConfiguration
 
-/// スナップショットテストマトリクスの設定。
+/// The matrix a suite captures: every device × theme × locale × text size combination is one image.
 public struct SnapshotConfiguration: Sendable {
-    /// テスト対象デバイスの一覧。
+    /// Devices each view snapshot is repeated on. Every entry added multiplies the image count.
     public var devices: [SnapshotDevice]
-    /// テスト対象テーマ（ライト / ダーク）の一覧。
+    /// Appearances to capture. Component snapshots use this axis and nothing else.
     public var themes: [SnapshotTheme]
-    /// テスト対象ロケールの一覧（例: `"en"`, `"ja"`）。
+    /// Locale identifiers to render under, such as `"en"` or `"ja"`. Empty for components.
     public var locales: [String]
-    /// テスト対象の文字サイズ一覧。既定は `[.standard]`（軸を増やさない）。
+    /// Text sizes to capture. Defaults to `[.standard]`, so the axis costs nothing until asked for.
     public var dynamicTypes: [SnapshotDynamicType]
-    /// ピクセル単位の一致精度。0〜1 の範囲で 1.0 が完全一致。
+    /// Share of pixels that must match, 0 to 1. At the default 0.99 a one-point line can still pass.
     public var precision: Float
-    /// 知覚的な色差を許容する精度。アンチエイリアスのズレなど微細な差異を吸収する。
+    /// How close each pixel's colour has to be, 0 to 1. Below 1 it absorbs anti-aliasing drift.
     public var perceptualPrecision: Float
 
     public init(
@@ -171,20 +171,21 @@ public struct SnapshotConfiguration: Sendable {
         self.perceptualPrecision = perceptualPrecision
     }
 
-    /// 既定で撮る端末。
+    /// The devices captured unless a suite says otherwise.
     ///
-    /// **`SnapshotDevice.allCases` を既定にしない。** 端末を 1 つ足すたびに、
-    /// 既存の全スイートが撮る枚数が黙って増え、参照画像の無い面が失敗として現れる。
-    /// 分割幅（`iPadPro11Half` / `iPadPro11Third`）は、撮ると決めたスイートだけが明示的に足す。
+    /// **Do not make `SnapshotDevice.allCases` the default.** Every device added would silently raise
+    /// the number of images every existing suite captures, and the surfaces with no reference image
+    /// would surface as failures. The split widths (`iPadPro11Half` / `iPadPro11Third`) are added
+    /// explicitly by the suites that decided to capture them.
     public static let standardDevices: [SnapshotDevice] = [.iPhone16, .iPhoneSE, .iPadPro11]
 
-    /// デフォルト設定: iPhone16・iPhoneSE・iPadPro11、ライト・ダーク、en・ja、既定の文字サイズ。
+    /// iPhone 16, iPhone SE, and iPad Pro 11, light and dark, en and ja, at the default text size.
     public static let `default` = SnapshotConfiguration()
 
-    /// コンポーネントスナップショットスイート用設定。テーマ軸のみ（デバイスフレーム・ロケール変動なし）。
+    /// Theme axis only — no device frame, no locale variation.
     ///
-    /// `VisualTesting.assertComponentSnapshot` を直接呼び出す場合に使用する。
-    /// `@ComponentSnapshot` 付き関数では自動的にこの設定が適用される。
+    /// For calling `VisualTesting.assertComponentSnapshot` directly. Cases collected from
+    /// `@ComponentSnapshot` do not pick this up; they run under whatever the runner passes.
     public static let component = SnapshotConfiguration(
         devices: [],
         themes: SnapshotTheme.allCases,

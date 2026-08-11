@@ -1,9 +1,9 @@
 import CoreGraphics
 
-/// View またはコンポーネントのスナップショットテストスイートを定義するマクロ。
+/// Collects the suite's snapshot functions into a `__snapshotCases` static property.
 ///
-/// 子関数の `@Snapshot` / `@ComponentSnapshot` を走査して `__snapshotCases` 静的プロパティに収集する。
-/// スイートには手書きのランナーテストを 1 つ宣言する必要があり、欠落した場合はコンパイルエラーを出力する。
+/// The struct also has to declare one hand-written runner test; leaving it out is a compile error
+/// that names the exact line to add.
 ///
 /// ```swift
 /// @SnapshotSuite("SettingsView")
@@ -20,23 +20,24 @@ import CoreGraphics
 /// }
 /// ```
 ///
-/// ランナーはマクロで生成できない。マクロ生成の宣言内で `@Test` を展開するとコンパイラが
-/// lexical context を失い、swift-testing のテストコンテンツレコードが型の内部でコンパイルできなくなるためである。
+/// The runner cannot be generated. Expanding `@Test` inside a macro-generated declaration makes the
+/// compiler lose its lexical context, and swift-testing's test content records then fail to compile
+/// inside the type.
 @attached(member, names: named(__snapshotCases))
 public macro SnapshotSuite(_ viewName: String) =
     #externalMacro(module: "VisualTestingMacros", type: "SnapshotSuiteMacro")
 
-/// View スナップショット対象としてマーク付けするマクロ。
+/// Marks a function as a full-screen view to capture across the whole matrix.
 ///
-/// 関数は `some View` を返す必要がある。`@SnapshotSuite` がデバイス × テーマ × ロケールの
-/// マトリクスで `VisualTesting.assertViewSnapshot` を呼び出す `@Test` メソッドを生成する。
+/// The function returns `some View` and takes no arguments; `@SnapshotSuite` on the enclosing struct
+/// is what turns the mark into a captured case.
 @attached(peer)
 public macro Snapshot() =
     #externalMacro(module: "VisualTestingMacros", type: "SnapshotMacro")
 
-/// コンポーネントスナップショット対象としてマーク付けするマクロ（サイズ指定付き）。
+/// Marks a function as a component to capture on the theme axis alone, at a fixed size.
 ///
-/// テーマ軸のみでキャプチャする（デバイスフレーム・ロケール変動なし）。
+/// No device frame and no locale variation. Omitting the size falls back to the view's intrinsic size.
 ///
 /// ```swift
 /// @ComponentSnapshot(width: 340, height: 120)
@@ -48,12 +49,12 @@ public macro Snapshot() =
 public macro ComponentSnapshot(width: CGFloat? = nil, height: CGFloat? = nil) =
     #externalMacro(module: "VisualTestingMacros", type: "ComponentSnapshotMacro")
 
-/// View を `NavigationStack` でラップするよう指定するマクロ。
+/// Wraps the view in a `NavigationStack` before capture, so the bar is part of the image.
 @attached(peer)
 public macro InNavigation() =
     #externalMacro(module: "VisualTestingMacros", type: "InNavigationMacro")
 
-/// スナップショットキャプチャ中にアニメーションを無効化するよう指定するマクロ。
+/// Turns UIKit animations off for the capture, for views that would otherwise be caught mid-transition.
 @attached(peer)
 public macro WithoutAnimation() =
     #externalMacro(module: "VisualTestingMacros", type: "WithoutAnimationMacro")

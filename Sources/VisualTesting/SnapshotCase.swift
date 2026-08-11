@@ -2,10 +2,9 @@
 import SwiftUI
 import Testing
 
-/// `@SnapshotSuite` が収集する 1 つのスナップショットケース。
+/// One capture the suite will perform: a name, a shape, and a closure that builds the view.
 ///
-/// マクロは `@Snapshot` / `@ComponentSnapshot` 関数を `__snapshotCases` へ収集する。
-/// 手書きのパラメタライズドテストがそれらを実行する。
+/// The macro collects these; the hand-written runner is what actually executes them.
 ///
 /// ```swift
 /// @SnapshotSuite("SettingsView")
@@ -20,16 +19,16 @@ import Testing
 /// }
 /// ```
 ///
-/// ランナーテストは手書きが必須。マクロ生成の宣言内で `@Test` を展開するとコンパイラが
-/// lexical context を失い、swift-testing がファイルスコープのテストレコードを生成して
-/// 型の内部でコンパイルできなくなるためである。
+/// The runner has to be hand-written. Expanding `@Test` inside a macro-generated declaration makes
+/// the compiler lose its lexical context, and swift-testing then emits file-scope test records that
+/// cannot compile inside the type.
 public struct SnapshotCase: Sendable, CustomTestStringConvertible {
 
-    /// スナップショットのキャプチャ方式と命名方式。
+    /// Which axes the case is captured across, and therefore how its files are named.
     public enum Kind: Sendable {
-        /// デバイス × テーマ × ロケールのマトリクスでキャプチャする全画面 View スナップショット。
+        /// A full-screen view, captured across the device × theme × locale matrix.
         case view(inNavigation: Bool, disableAnimations: Bool)
-        /// テーマ軸のみでキャプチャするコンポーネントスナップショット。
+        /// A component, captured on the theme axis alone; a nil dimension falls back to intrinsic size.
         case component(width: CGFloat?, height: CGFloat?)
     }
 
@@ -52,10 +51,10 @@ public struct SnapshotCase: Sendable, CustomTestStringConvertible {
 
     public var testDescription: String { stateName }
 
-    /// このケースのスナップショットアサーションを実行する。
+    /// Runs this case's assertion.
     ///
-    /// `#filePath` がテストソースの隣のスナップショットディレクトリに解決されるよう、
-    /// スイート自身のファイルから呼び出す。
+    /// Call it from the suite's own file. `file` defaults to the caller's `#filePath`, and that is what
+    /// puts `__Snapshots__` next to the test source rather than wherever the helper happens to live.
     @MainActor
     public func run(
         configuration: SnapshotConfiguration = .default,

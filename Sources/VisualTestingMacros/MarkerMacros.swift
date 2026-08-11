@@ -1,8 +1,10 @@
 import SwiftSyntax
 import SwiftSyntaxMacros
 
-/// View スナップショット関数用のマーカーマクロ実装。
-/// コードを生成しない。`@SnapshotSuite` がスナップショット対象の検出に使用する。
+/// Marker for a view snapshot function.
+///
+/// Generates nothing; it exists so `@SnapshotSuite` can find the function, and so applying the
+/// attribute to anything other than a function is a compile error.
 public struct SnapshotMacro: PeerMacro {
     public static func expansion(
         of node: AttributeSyntax,
@@ -16,8 +18,9 @@ public struct SnapshotMacro: PeerMacro {
     }
 }
 
-/// コンポーネントスナップショット関数用のマーカーマクロ実装（サイズ指定付き）。
-/// コードを生成しない。`@SnapshotSuite` がコンポーネントスナップショット対象の検出に使用する。
+/// Marker for a component snapshot function, carrying the requested size in its arguments.
+///
+/// Generates nothing; `@SnapshotSuite` reads both the mark and the size off the attribute.
 public struct ComponentSnapshotMacro: PeerMacro {
     public static func expansion(
         of node: AttributeSyntax,
@@ -31,7 +34,7 @@ public struct ComponentSnapshotMacro: PeerMacro {
     }
 }
 
-/// `NavigationStack` でラップすることを示すマーカーマクロ実装。
+/// Marker read by `@SnapshotSuite`; on a function with no `@Snapshot` it is silently inert.
 public struct InNavigationMacro: PeerMacro {
     public static func expansion(
         of node: AttributeSyntax,
@@ -42,7 +45,7 @@ public struct InNavigationMacro: PeerMacro {
     }
 }
 
-/// スナップショットキャプチャ中のアニメーション無効化を示すマーカーマクロ実装。
+/// Marker read by `@SnapshotSuite`; on a function with no `@Snapshot` it is silently inert.
 public struct WithoutAnimationMacro: PeerMacro {
     public static func expansion(
         of node: AttributeSyntax,

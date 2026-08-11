@@ -2,13 +2,13 @@ import SwiftDiagnostics
 import SwiftSyntax
 import SwiftSyntaxMacros
 
-/// `@Snapshot` / `@ComponentSnapshot` 関数を `__snapshotCases` 静的プロパティに収集するマクロ。
+/// Collects the marked functions of a struct into a `__snapshotCases` static property.
 ///
-/// 設計上の注意: このマクロは `@Test` / `@Suite` 宣言を生成してはならない。
-/// マクロ生成の宣言内で swift-testing マクロを展開するとコンパイラが lexical context を失い、
-/// swift-testing がファイルスコープのテストコンテンツレコード（`@_section` / `@_used` の
-/// 非 static プロパティ）を生成して型の内部でコンパイルできなくなる（Xcode 26.4 以降で顕在化）。
-/// 代わりにユーザーが手書きのランナーテストを 1 つ記述し、`expansion` は欠落時にエラーを診断する。
+/// Design constraint: this macro must not generate `@Test` or `@Suite` declarations. Expanding a
+/// swift-testing macro inside a macro-generated declaration makes the compiler lose its lexical
+/// context, and swift-testing then emits file-scope test content records (non-static properties
+/// marked `@_section` / `@_used`) that cannot compile inside a type. It surfaced in Xcode 26.4.
+/// So the user writes the one runner by hand, and `expansion` diagnoses its absence.
 public struct SnapshotSuiteMacro: MemberMacro {
 
     static let runnerTemplate =
@@ -70,9 +70,10 @@ public struct SnapshotSuiteMacro: MemberMacro {
 
     // MARK: - Runner Detection
 
-    /// struct が `__snapshotCases` を消費する手書きランナーを宣言しているかを返す。
-    /// `@Test` の有無だけでは不十分: スイートが直接 API テストのみを持ち、
-    /// 収集ケースが実行されない状態を見逃す可能性があるため。
+    /// Whether the struct declares a runner that consumes `__snapshotCases`.
+    ///
+    /// Looking only for `@Test` is not enough: a suite holding nothing but direct-API tests would pass
+    /// while its collected cases never ran.
     private static func hasHandwrittenTestRunner(_ declaration: some DeclGroupSyntax) -> Bool {
         for member in declaration.memberBlock.members {
             guard let funcDecl = member.decl.as(FunctionDeclSyntax.self) else { continue }
@@ -153,7 +154,7 @@ public struct SnapshotSuiteMacro: MemberMacro {
         return names
     }
 
-    /// `@ComponentSnapshot(width: 340, height: 120)` から width/height を解析する。
+    /// Reads width and height off `@ComponentSnapshot`, as source text rather than evaluated numbers.
     private static func parseComponentSize(from funcDecl: FunctionDeclSyntax) -> (width: String?, height: String?) {
         for attribute in funcDecl.attributes {
             guard let attr = attribute.as(AttributeSyntax.self),

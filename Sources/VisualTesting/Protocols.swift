@@ -4,10 +4,10 @@ import UIKit
 
 // MARK: - ThemeApplicable
 
-/// スナップショット View にテーマを適用するプロトコル。
+/// The seam between a theme axis and whatever drives appearance in the app under test.
 ///
-/// デフォルト実装は `environment(\.colorScheme, ...)` を使用する。
-/// カスタムテーマシステム（例: `ThemeProvider`）と統合する場合はアプリ側で実装する。
+/// The default goes through `environment(\.colorScheme, ...)`. An app whose colours come from its own
+/// theme object instead implements this, so snapshots exercise the same path the app does.
 ///
 /// ```swift
 /// struct AppThemeApplicable: ThemeApplicable {
@@ -24,7 +24,7 @@ public protocol ThemeApplicable: Sendable {
     func applyTheme<V: View>(_ view: V, theme: SnapshotTheme) -> AnyView
 }
 
-/// `colorScheme` environment を使ったデフォルトのテーマ実装。
+/// Applies the theme through the `colorScheme` environment — enough for views that read it directly.
 public struct DefaultThemeApplicable: ThemeApplicable {
     public init() {}
 

@@ -3,14 +3,14 @@ import Foundation
 
 extension VisualTesting {
 
-    /// スナップショットカタログから自己完結型 HTML ギャラリーを生成する。
+    /// Writes a single HTML file that browses a catalog: filters, search, light/dark compare, lightbox.
     ///
-    /// 生成 HTML はカタログ JSON と全 CSS/JS をインラインで埋め込む。
-    /// サーバー不要で `file://` プロトコルでそのまま開ける。
+    /// The catalog JSON, the CSS, and the JavaScript are all inlined, so the page opens over `file://`
+    /// with no server. Image `src` values stay relative, so the file has to sit at the catalog root.
     ///
     /// - Parameters:
-    ///   - catalog: レンダリング対象のスナップショットカタログ。
-    ///   - outputPath: HTML ファイルの出力先パス。
+    ///   - catalog: The catalog to render.
+    ///   - outputPath: Where the HTML file is written.
     public static func generateGallery(catalog: SnapshotCatalog, outputPath: String) {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]

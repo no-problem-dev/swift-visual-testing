@@ -1,112 +1,119 @@
 # Changelog
 
-このプロジェクトのすべての注目すべき変更はこのファイルに記録されます。
+All notable changes to this project are recorded in this file.
 
-フォーマットは [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/) に基づいており、
-このプロジェクトは [Semantic Versioning](https://semver.org/lang/ja/) に従います。
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [未リリース]
-
-なし
+## [Unreleased]
 
 ## [2.1.0] - 2026-08-02
 
-### 追加
+### Added
 
-- **iPad の分割幅を `SnapshotDevice` に追加**: `iPadPro11Half`（597×834）と
-  `iPadPro11Third`（398×834）。iPadOS 26 で Split View / Slide Over が廃止され、
-  ウィンドウが自由リサイズになったため、HIG が求める 1/2・1/3 幅での検証を撮れるようにした。
-  幅は横向き（1194pt）を基準に取る —— 縦向きの 1/3（278pt）は iPadOS が許す
-  ウィンドウ最小幅を下回り、実際には作れない面になるため。
-  **どちらの幅も horizontal size class は compact に落ちる。**
-- **文字サイズの軸 `SnapshotDynamicType`**: `.standard`（`.large`）と
-  `.accessibility3`。`SnapshotConfiguration.dynamicTypes` で指定する。
-  SwiftUI の `\.dynamicTypeSize` 環境と `ViewImageConfig` の
-  `preferredContentSizeCategory` trait の両方に効かせる —— 環境だけだと、
-  UIKit が寸法を決める部分（ナビゲーションバー・リスト行の最小高）が既定サイズのまま残る。
-- `SnapshotEntry.dynamicType`（`String?`）。既定サイズでは `nil`。
-- `SnapshotConfiguration.standardDevices`（既定で撮る 3 端末）。
+- **iPad split widths on `SnapshotDevice`**: `iPadPro11Half` (597×834) and `iPadPro11Third`
+  (398×834). iPadOS 26 dropped Split View and Slide Over for freely resizable windows, so the 1/2
+  and 1/3 widths the HIG asks about are now capturable. Widths come from the landscape screen
+  (1194pt) — a third of the portrait width (278pt) is below the minimum window width iPadOS allows
+  and would capture a surface no user can produce. **Both widths land in the compact horizontal
+  size class.**
+- **`SnapshotDynamicType`, a text-size axis**: `.standard` (`.large`) and `.accessibility3`,
+  selected through `SnapshotConfiguration.dynamicTypes`. Both the SwiftUI `\.dynamicTypeSize`
+  environment and the `ViewImageConfig` `preferredContentSizeCategory` trait are set — with only the
+  environment, the parts UIKit measures (navigation bars, minimum list row heights) stay at the
+  default size.
+- `SnapshotEntry.dynamicType` (`String?`), `nil` at the default size.
+- `SnapshotConfiguration.standardDevices`, the three devices captured by default.
 
-### 変更
+### Changed
 
-- **`SnapshotConfiguration` の既定端末を `SnapshotDevice.allCases` から
-  `standardDevices` に変更した。** 端末を 1 つ足すたびに既存の全スイートが撮る枚数が
-  黙って増え、参照画像の無い面が失敗として現れるため。分割幅は使うスイートが明示的に足す。
-  **2.0 系で撮った参照画像はそのまま使える**（既定の行列は変わっていない）。
+- **`SnapshotConfiguration` now defaults to `standardDevices` instead of `SnapshotDevice.allCases`.**
+  Otherwise every device added would silently raise the image count of every existing suite, and the
+  surfaces with no reference image would surface as failures. Split widths are added explicitly by
+  the suites that want them. **Reference images recorded under 2.0 remain valid** — the default
+  matrix is unchanged, and only the accessibility size adds a `_{dynamicType}` suffix to file names.
 
-### 互換性
+## [2.0.1] - 2026-07-19
 
-- 既定の文字サイズでは参照画像の名前を変えない（`{state}.{theme}_{locale}.png`）。
-  アクセシビリティサイズのときだけ `_{dynamicType}` が付く。2.0 系で記録した画像の
-  撮り直しは不要。
+### Changed
+
+- Doc comments and the DocC catalog rewritten; README split into English and Japanese editions.
+- DocC published to GitHub Pages, with `/documentation/visualtesting` as the canonical route.
+- CI workflows synced to the shared template (tests + release-on-tag); the old auto-release workflow
+  was removed.
 
 ## [2.0.0] - 2026-06-06
 
-### 破壊的変更
+### Changed
 
-- **`@Test` の自動生成を廃止し、`SnapshotCase` 収集方式へ再設計**: Xcode 26.4 で、マクロが生成した
-  `@Test` は宣言元の lexical context を失い swift-testing のテストレコードを壊すため、
-  `@SnapshotSuite` は `__snapshotCases` の収集だけを行うようになった。各スイートには
-  `@Test func snapshots() { for snapshotCase in Self.__snapshotCases { snapshotCase.run() } }`
-  のランナーを手書きで置く。`run(file:)` は既定で呼び出し元の `#filePath` を使うため、
-  ランナーはそのスイート自身のファイルに置くこと（参照画像の探索位置がそこで決まる）。
-- **参照画像のパス構成を変更**: View は `{view}/{device}/{state}.{theme}_{locale}.png`、
-  コンポーネントは `{component}/{state}.{theme}.png`。1.x で記録した画像は再記録が必要。
+- **Breaking: `@Test` generation removed in favour of `SnapshotCase` collection.** Under Xcode 26.4,
+  a macro-generated `@Test` loses the lexical context of its declaration and corrupts swift-testing's
+  test records, so `@SnapshotSuite` now only collects `__snapshotCases`. Each suite declares its own
+  runner:
+  `@Test func snapshots() { for snapshotCase in Self.__snapshotCases { snapshotCase.run() } }`.
+  Keep it in the suite's own file — `run(file:)` defaults to the caller's `#filePath`, and that is
+  what decides where reference images are looked up.
+- **Breaking: reference image paths restructured.** Views use
+  `{view}/{device}/{state}.{theme}_{locale}.png` and components use `{component}/{state}.{theme}.png`.
+  Images recorded under 1.x must be re-recorded.
 
-### 追加
+### Fixed
 
-- `SnapshotDevice` に `iPadPro11` を追加
-- HTML ギャラリー自動生成（`generateGallery`）と `basePath` / `category`
-- デバイス別サブディレクトリとメタデータカタログ（`manifest.json`）
+- Runner detection tightened to require an actual reference to `__snapshotCases`, so a suite holding
+  only direct-API tests no longer passes as if its collected cases had run.
 
-### 修正
+## [1.3.1] - 2026-02-17
 
-- ランナー検出を `__snapshotCases` 参照ベースに厳密化
-- Swift 6.2 の multiline string literal で明示的 `return` が必要な箇所を修正
-- マクロ生成コードでの `SourceLocation` クラッシュ
+### Fixed
+
+- Multiline string literals needed an explicit `return` under Swift 6.2.
+
+## [1.3.0] - 2026-02-17
+
+### Added
+
+- HTML gallery generation (`generateGallery`), with `basePath` and `category` on manifests.
+
+## [1.2.0] - 2026-02-17
+
+### Added
+
+- `SnapshotDevice.iPadPro11`.
+- Per-device subdirectories, and the metadata catalog (`manifest.json`).
+
+## [1.1.1] - 2026-02-17
+
+### Fixed
+
+- `SourceLocation` crash in macro-generated code.
+
+## [1.1.0] - 2026-02-17
+
+### Fixed
+
+- `@Test` macro compatibility under the nested `@Suite` struct pattern.
+
+## [1.0.1] - 2026-02-17
+
+### Fixed
+
+- Argument order in the `verifySnapshot` call.
 
 ## [1.0.0] - 2026-02-17
 
-### 追加
+### Added
 
-- **@SnapshotSuite マクロ**: 宣言的なスナップショットテストスイート
-  - struct に付与して `@Snapshot` / `@ComponentSnapshot` 関数を探索し `@Test` メソッドを自動生成
-  - `collectSnapshotFunctions` パターンによる子関数の自動探索（`@APIGroup` と同じ設計哲学）
-
-- **@Snapshot マクロ**: View スナップショット対象のマーカー
-  - デバイス × テーマ × ロケール の全組み合わせでスナップショットを自動生成
-  - `__Snapshots__/{viewName}/{stateName}.{device}_{theme}_{locale}.png` のディレクトリ構造
-
-- **@ComponentSnapshot マクロ**: コンポーネントスナップショット対象のマーカー
-  - テーマ軸のみ（デバイスフレーム不要）
-  - オプションの `width` / `height` パラメータでサイズ指定
-
-- **@InNavigation マクロ**: NavigationStack ラップのマーカー
-
-- **@WithoutAnimation マクロ**: アニメーション無効化のマーカー
-
-- **VisualTesting.assertViewSnapshot**: View スナップショットの核心関数
-  - `snapshotDirectory` を自動算出して意味のあるディレクトリ階層に配置
-  - `verifySnapshot` 連携で swift-snapshot-testing との統合
-
-- **VisualTesting.assertComponentSnapshot**: コンポーネントスナップショット関数
-  - テーマ軸のみのマトリックス
-  - 自動サイズ計算またはサイズ指定
-
-- **SnapshotConfiguration**: スナップショットテストマトリックス設定
-  - `devices`, `themes`, `locales`, `precision`, `perceptualPrecision`
-
-- **ThemeApplicable プロトコル**: プラグ可能なテーマシステム
-  - デフォルト実装: `colorScheme` environment
-  - カスタムテーマシステム（ThemeProvider 等）への拡張ポイント
-
-- **SnapshotDevice**: iPhone 16 / iPhone SE デバイス設定
-
-- **SnapshotTheme**: ライト / ダーク テーマ設定
-
-### ドキュメント
-
-- RELEASE_PROCESS.md
-
-[未リリース]: https://github.com/no-problem-dev/swift-visual-testing/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/no-problem-dev/swift-visual-testing/releases/tag/v1.0.0
+- **`@SnapshotSuite`**: marks a struct as a snapshot suite, discovering its `@Snapshot` and
+  `@ComponentSnapshot` functions and generating the `@Test` methods that run them.
+- **`@Snapshot`**: marks a view snapshot target, captured across every device × theme × locale
+  combination into `__Snapshots__/{viewName}/{stateName}.{device}_{theme}_{locale}.png`.
+- **`@ComponentSnapshot(width:height:)`**: marks a component target, captured on the theme axis
+  alone with an optional explicit size.
+- **`@InNavigation`** and **`@WithoutAnimation`**: `NavigationStack` wrapping and animation
+  suppression.
+- **`VisualTesting.assertViewSnapshot`** and **`VisualTesting.assertComponentSnapshot`**: the
+  underlying assertions, resolving the snapshot directory from the calling file and delegating to
+  swift-snapshot-testing's `verifySnapshot`.
+- **`SnapshotConfiguration`**: `devices`, `themes`, `locales`, `precision`, `perceptualPrecision`.
+- **`ThemeApplicable`**: a pluggable theme system, defaulting to the `colorScheme` environment.
+- **`SnapshotDevice`** (iPhone 16, iPhone SE) and **`SnapshotTheme`** (light, dark).

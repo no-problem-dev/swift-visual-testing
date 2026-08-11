@@ -2,25 +2,22 @@ English | [日本語](./README.ja.md)
 
 # VisualTesting
 
-SwiftUI snapshot testing library. Eliminates boilerplate with declarative macros and automatically generates snapshots across a device × theme × locale matrix.
+Snapshot testing for SwiftUI: name the states you care about, and every device × theme × locale × text size combination is captured for you.
 
 ![Swift 6.2+](https://img.shields.io/badge/Swift-6.2+-orange.svg)
 ![iOS 17+](https://img.shields.io/badge/iOS-17+-blue.svg)
 ![macOS 14+](https://img.shields.io/badge/macOS-14+-purple.svg)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
 
-## Features
+## Overview
 
-- **Declarative macros**: `@SnapshotSuite` / `@Snapshot` / `@ComponentSnapshot` — just return a View
-- **Matrix testing**: Automatically generates every device × theme × locale × text size combination
-- **Device subdirectories**: Auto-organized at `__Snapshots__/{ViewName}/{device}/{stateName}.{theme}_{locale}.png`
-- **iPad support**: iPhone 16, iPhone SE, and iPad Pro 11 by default; iPadOS 26 window widths (1/2, 1/3) opt in
-- **Metadata catalog**: Auto-generates per-view `manifest.json` and root `snapshot-catalog.json`
-- **Theme system integration**: Connect any theme system via the `ThemeApplicable` protocol
-- **View / Component separation**: Views use the full matrix; components use theme axis only
-- **Swift Testing support**: Each suite runs the collected `SnapshotCase` values from one hand-written `@Test`; failures are reported via `Issue.record`
+- **Declarative macros.** `@SnapshotSuite`, `@Snapshot`, `@ComponentSnapshot` — a function returns a View, and that is the whole test.
+- **Matrix capture.** Three devices, light and dark, `en` and `ja` by default. iPadOS 26 window widths and accessibility text sizes are opt-in axes, so adding them never invalidates images you already recorded.
+- **Views and components are separate.** Full-screen views use the matrix; design-system components use the theme axis alone.
+- **Any theme system.** `ThemeApplicable` connects the theme axis to whatever actually drives appearance in your app, so snapshots exercise the same path the app does.
+- **Browsable output.** Every run writes a `manifest.json` beside the images; those aggregate into a catalog and a self-contained HTML gallery with filters, search, and light/dark comparison.
 
-## Quick Start
+## Usage
 
 ```swift
 import SwiftUI
@@ -30,18 +27,9 @@ import VisualTesting
 @SnapshotSuite("SettingsView")
 @MainActor
 struct SettingsViewSnapshots {
-    init() { setupVisualTesting() }
-
     @Snapshot
     func loaded() -> some View {
         SettingsView()
-    }
-
-    @Snapshot
-    @InNavigation
-    @WithoutAnimation
-    func editing() -> some View {
-        SettingsView(isEditing: true)
     }
 
     @Test func snapshots() {
@@ -50,45 +38,26 @@ struct SettingsViewSnapshots {
 }
 ```
 
-> **Note**: Each suite requires one hand-written runner test (`@Test func snapshots()`).
-> The macro only collects `__snapshotCases` — generating `@Test` from a macro causes the
-> compiler to lose lexical context and corrupts swift-testing's test records.
-> A compile error with the exact line to add is emitted when the runner is missing.
+That single function records twelve reference images at
+`__Snapshots__/SettingsView/{device}/loaded.{theme}_{locale}.png`.
 
-These two functions automatically produce the following reference images:
+The runner test is hand-written on purpose: a macro cannot expand `@Test` without corrupting
+swift-testing's test records, so `@SnapshotSuite` only collects the cases. Omitting the runner is a
+compile error that names the exact line to add.
 
-```
-__Snapshots__/
-  SettingsView/
-    iPhone16/
-      loaded.light_en.png
-      loaded.light_ja.png
-      loaded.dark_en.png
-      loaded.dark_ja.png
-      editing.light_en.png
-      ...
-    iPhoneSE/
-      loaded.light_en.png
-      ...
-    iPadPro11/
-      loaded.light_en.png
-      ...
-    manifest.json                    ← per-view metadata (auto-generated)
-```
+## Documentation
+
+[Getting Started and the full API reference](https://no-problem-dev.github.io/swift-visual-testing/documentation/visualtesting/)
+cover component snapshots, custom theme systems, changing the matrix, recording reference images, and
+generating the HTML gallery.
 
 ## Installation
-
-### Swift Package Manager
-
-Add to `Package.swift`:
 
 ```swift
 dependencies: [
     .package(url: "https://github.com/no-problem-dev/swift-visual-testing.git", from: "2.0.0")
 ]
 ```
-
-Add to your test target:
 
 ```swift
 .testTarget(
@@ -99,392 +68,10 @@ Add to your test target:
 )
 ```
 
-## Usage
+## Contributing
 
-### View Snapshots
-
-Use `@SnapshotSuite` and `@Snapshot` to capture full-screen Views. Each function just returns a View — the macro resolves viewName and stateName automatically.
-
-```swift
-@SnapshotSuite("MyView")
-@MainActor
-struct MyViewSnapshots {
-    init() { setupVisualTesting() }
-
-    @Snapshot
-    func loaded() -> some View {
-        MyView(state: .loaded)
-    }
-
-    @Snapshot
-    func empty() -> some View {
-        MyView(state: .empty)
-    }
-
-    @Test func snapshots() {
-        for snapshotCase in Self.__snapshotCases { snapshotCase.run() }
-    }
-}
-```
-
-**Output**: `__Snapshots__/MyView/{device}/loaded.{theme}_{locale}.png`
-
-The default configuration produces 3 devices × 2 themes × 2 locales × 1 text size = **12 snapshots**.
-
-### Component Snapshots
-
-Use `@ComponentSnapshot` to capture UI components (buttons, cards, etc.) at a fixed size. Theme axis only.
-
-```swift
-@SnapshotSuite("Card")
-@MainActor
-struct CardSnapshots {
-    init() { setupVisualTesting() }
-
-    @ComponentSnapshot(width: 340, height: 120)
-    func level1() -> some View {
-        Card(elevation: .level1) { Text("Card") }
-            .frame(width: 300, height: 80).padding()
-    }
-
-    @ComponentSnapshot(width: 340, height: 120)
-    func level2() -> some View {
-        Card(elevation: .level2) { Text("Card") }
-            .frame(width: 300, height: 80).padding()
-    }
-
-    @Test func snapshots() {
-        for snapshotCase in Self.__snapshotCases { snapshotCase.run() }
-    }
-}
-```
-
-**Output**: `__Snapshots__/Card/level1.light.png`, `__Snapshots__/Card/level1.dark.png`
-
-### Attribute Macros
-
-Attach attribute macros to test functions to customize behavior.
-
-```swift
-@Snapshot
-@InNavigation        // Wrap in NavigationStack
-@WithoutAnimation    // Disable animations
-func detail() -> some View {
-    DetailView()
-}
-```
-
-### Macro Reference
-
-| Macro | Kind | Role |
-|--------|------|------|
-| `@SnapshotSuite("ViewName")` | MemberMacro | Collects `@Snapshot` / `@ComponentSnapshot` child functions into `__snapshotCases` (hand-written runner required) |
-| `@Snapshot` | PeerMacro | Marks a function as a view snapshot target |
-| `@ComponentSnapshot(width:height:)` | PeerMacro | Marks a function as a component target (with size) |
-| `@InNavigation` | PeerMacro | Specifies `NavigationStack` wrapping |
-| `@WithoutAnimation` | PeerMacro | Specifies animation disabling |
-
-### Theme System Integration
-
-By default, `environment(\.colorScheme, ...)` is used. To integrate a custom theme system (e.g. `ThemeProvider`), implement the `ThemeApplicable` protocol.
-
-```swift
-import DesignSystem
-import SwiftUI
-import VisualTesting
-
-struct AppThemeApplicable: ThemeApplicable {
-    @MainActor
-    func applyTheme<V: View>(_ view: V, theme: SnapshotTheme) -> AnyView {
-        let provider = ThemeProvider()
-        provider.themeMode = theme == .light ? .light : .dark
-        return AnyView(view.theme(provider))
-    }
-}
-
-@MainActor
-func setupVisualTesting() {
-    VisualTesting.themeApplicable = AppThemeApplicable()
-}
-```
-
-Call `setupVisualTesting()` in your test suite's `init()`.
-
-### Customizing Configuration
-
-Use `SnapshotConfiguration` to change the default matrix. Pass it as the `configuration` parameter when calling the direct API.
-
-```swift
-let config = SnapshotConfiguration(
-    devices: [.iPhone16],
-    themes: [.dark],
-    locales: ["en"],
-    precision: 0.99,
-    perceptualPrecision: 0.98
-)
-```
-
-### Recording Reference Images
-
-On first run, or to re-record reference images, set the record-mode environment variable.
-
-`VisualTesting` is built on UIKit, so tests run on an iOS Simulator via `xcodebuild` — not `swift test`. Pass the variable with the `TEST_RUNNER_` prefix so `xcodebuild` forwards it to the test runner process, where swift-snapshot-testing reads it as `SNAPSHOT_TESTING_RECORD`.
-
-```bash
-# Run in record mode for all snapshots
-TEST_RUNNER_SNAPSHOT_TESTING_RECORD=all xcodebuild test \
-  -scheme YourScheme \
-  -destination 'platform=iOS Simulator,name=iPhone 16'
-```
-
-## Direct API
-
-For more granular control without macros, use the direct API.
-
-### View Snapshot
-
-```swift
-@Suite("MyView Snapshots")
-@MainActor
-struct MyViewSnapshots {
-    init() { setupVisualTesting() }
-
-    @Test("loaded")
-    func loaded() {
-        VisualTesting.assertViewSnapshot(
-            of: MyView(),
-            viewName: "MyView",
-            stateName: "loaded",
-            inNavigation: false,
-            disableAnimations: true,
-            file: #filePath, line: #line)
-    }
-}
-```
-
-### Component Snapshot
-
-```swift
-VisualTesting.assertComponentSnapshot(
-    of: Card(elevation: .level1) { Text("Card") }
-        .frame(width: 300, height: 80).padding(),
-    componentName: "Card",
-    stateName: "level1",
-    size: CGSize(width: 340, height: 120),
-    file: #filePath, line: #line)
-```
-
-## API Reference
-
-### Macros
-
-| Macro | Description |
-|--------|------|
-| `@SnapshotSuite("ViewName")` | Applied to a struct. Collects `@Snapshot` / `@ComponentSnapshot` child functions into `__snapshotCases`; a hand-written `@Test func snapshots()` runner is required |
-| `@Snapshot` | View snapshot. All device × theme × locale combinations |
-| `@ComponentSnapshot(width:height:)` | Component snapshot. Theme axis only |
-| `@InNavigation` | Wrap in `NavigationStack` |
-| `@WithoutAnimation` | Disable animations |
-
-### SnapshotCase
-
-One collected snapshot case. `@SnapshotSuite` gathers every `@Snapshot` / `@ComponentSnapshot` function into the `static var __snapshotCases: [SnapshotCase]` property, and the hand-written runner executes them.
-
-```swift
-public struct SnapshotCase: Sendable, CustomTestStringConvertible {
-    public enum Kind: Sendable {
-        case view(inNavigation: Bool, disableAnimations: Bool)
-        case component(width: CGFloat?, height: CGFloat?)
-    }
-
-    public let viewName: String
-    public let stateName: String
-    public let kind: Kind
-
-    @MainActor
-    public func run(
-        configuration: SnapshotConfiguration = .default,
-        file: StaticString = #filePath,
-        line: UInt = #line
-    )
-}
-```
-
-`run()` dispatches to `assertViewSnapshot` or `assertComponentSnapshot` depending on `kind`. Because `file` defaults to `#filePath` at the call site, calling `run()` from the suite's own file is what makes snapshots resolve to the `__Snapshots__` directory next to that test source. Pass `configuration:` to override the matrix for a single suite.
-
-### VisualTesting (Direct API)
-
-| Method | Description |
-|---------|------|
-| `assertViewSnapshot(of:viewName:stateName:inNavigation:disableAnimations:configuration:file:line:)` | Capture a View across device × theme × locale |
-| `assertComponentSnapshot(of:componentName:stateName:size:configuration:file:line:)` | Capture a component across theme axis only |
-| `generateCatalog(rootDirectory:outputPath:)` | Aggregate all manifest.json files into `snapshot-catalog.json` (returns `SnapshotCatalog`) |
-| `generateGallery(catalog:outputPath:)` | Generate a self-contained HTML gallery from a catalog |
-| `themeApplicable` | Theme application logic (customizable) |
-
-### SnapshotConfiguration
-
-| Property | Type | Default | Description |
-|----------|------|---------|------|
-| `devices` | `[SnapshotDevice]` | `[.iPhone16, .iPhoneSE, .iPadPro11]` | Target devices |
-| `themes` | `[SnapshotTheme]` | `[.light, .dark]` | Target themes |
-| `locales` | `[String]` | `["en", "ja"]` | Target locales |
-| `dynamicTypes` | `[SnapshotDynamicType]` | `[.standard]` | Target text sizes |
-| `precision` | `Float` | `0.99` | Pixel precision |
-| `perceptualPrecision` | `Float` | `0.98` | Perceptual precision |
-
-### SnapshotDevice
-
-| Case | Screen Size | Scale | Horizontal size class |
-|--------|----------|---------|------|
-| `.iPhone16` | 393 × 852 | @3x | compact |
-| `.iPhoneSE` | 375 × 667 | @2x | compact |
-| `.iPadPro11` | 834 × 1194 | @2x | regular |
-| `.iPadPro11Half` | 597 × 834 | @2x | compact |
-| `.iPadPro11Third` | 398 × 834 | @2x | compact |
-
-The two window widths cover the 1/2 and 1/3 sizes the HIG asks you to verify now that
-iPadOS 26 replaced Split View with freely resizable windows. Widths are taken from the
-landscape screen (1194pt) — a third of the portrait width (278pt) is below the minimum
-window width iPadOS allows, so it would render a layout no user can produce. They are
-**not** in the default device list; add them explicitly to the suites that need them.
-
-### SnapshotTheme
-
-| Case | Description |
-|--------|------|
-| `.light` | Light mode |
-| `.dark` | Dark mode |
-
-### SnapshotDynamicType
-
-| Case | `DynamicTypeSize` | File name suffix |
-|--------|------|------|
-| `.standard` | `.large` | none |
-| `.accessibility3` | `.accessibility3` | `_accessibility3` |
-
-`.standard` keeps the 2.0 file name, so adding this axis never invalidates existing
-reference images. Both the SwiftUI `\.dynamicTypeSize` environment and the
-`preferredContentSizeCategory` trait are set — the environment alone leaves UIKit-sized
-chrome (navigation bar, minimum row height) at the default size.
-
-### ThemeApplicable
-
-```swift
-public protocol ThemeApplicable: Sendable {
-    @MainActor
-    func applyTheme<V: View>(_ view: V, theme: SnapshotTheme) -> AnyView
-}
-```
-
-The default implementation `DefaultThemeApplicable` uses `environment(\.colorScheme, ...)`.
-
-## Directory Structure
-
-### View Snapshots
-
-```
-__Snapshots__/
-  SettingsView/                        ← viewName (@SnapshotSuite argument)
-    iPhone16/                          ← device subdirectory
-      loaded.light_en.png              ← stateName.theme_locale
-      loaded.light_ja.png
-      loaded.dark_en.png
-      loaded.dark_ja.png
-      editing.light_en.png
-      ...
-    iPhoneSE/
-      loaded.light_en.png
-      ...
-    iPadPro11/
-      loaded.light_en.png
-      ...
-    manifest.json                      ← per-view metadata (auto-generated)
-```
-
-### Component Snapshots
-
-```
-__Snapshots__/
-  Card/                                ← componentName (@SnapshotSuite argument)
-    level1.light.png                   ← stateName.theme
-    level1.dark.png
-    level2.light.png
-    level2.dark.png
-    manifest.json                      ← per-view metadata (auto-generated)
-```
-
-## Metadata Catalog
-
-A per-view `manifest.json` is auto-generated during each test run. Aggregate all manifests to produce a root catalog.
-
-### Generating the Catalog
-
-```swift
-@Test("Generate snapshot catalog")
-func generateCatalog() {
-    let snapshotsRoot = // path to the __Snapshots__ directory
-    let outputPath = // output path for snapshot-catalog.json
-    VisualTesting.generateCatalog(rootDirectory: snapshotsRoot, outputPath: outputPath)
-}
-```
-
-### Generating the HTML Gallery
-
-Generate a browser-viewable HTML gallery from the catalog.
-
-```swift
-@Test("Generate snapshot catalog and gallery")
-func generateCatalog() {
-    let snapshotsRoot = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
-    let catalogPath = snapshotsRoot.appendingPathComponent("snapshot-catalog.json").path
-    let galleryPath = snapshotsRoot.appendingPathComponent("gallery.html").path
-
-    let catalog = VisualTesting.generateCatalog(rootDirectory: snapshotsRoot.path, outputPath: catalogPath)
-    VisualTesting.generateGallery(catalog: catalog, outputPath: galleryPath)
-}
-```
-
-Open `gallery.html` in a browser after running tests (`open gallery.html`):
-
-- Section / device / theme / locale filters
-- Text search (real-time filter by View name)
-- Compare mode (light vs dark side by side)
-- Lightbox (click to enlarge + ← → keyboard navigation)
-- Gallery dark mode toggle
-- Lazy image loading
-
-### manifest.json Example
-
-```json
-{
-  "name": "SettingsView",
-  "type": "view",
-  "generatedAt": "2026-02-17T14:50:00Z",
-  "states": {
-    "loaded": {
-      "inNavigation": false,
-      "disableAnimations": false,
-      "snapshots": [
-        { "device": "iPhone16", "theme": "light", "locale": "en",
-          "file": "iPhone16/loaded.light_en.png" }
-      ]
-    }
-  }
-}
-```
-
-## Dependencies
-
-| Package | Purpose |
-|-----------|------|
-| [swift-syntax](https://github.com/swiftlang/swift-syntax) | Macro implementation |
-| [swift-snapshot-testing](https://github.com/pointfreeco/swift-snapshot-testing) | Snapshot engine |
-
-## Documentation
-
-Detailed API documentation is available on [GitHub Pages](https://no-problem-dev.github.io/swift-visual-testing/documentation/visualtesting/).
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-MIT License — see [LICENSE](LICENSE) for details.
+MIT — see [LICENSE](LICENSE).

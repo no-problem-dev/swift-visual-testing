@@ -6,19 +6,20 @@ import UIKit
 
 // MARK: - VisualTesting
 
-/// スナップショットテストのコアアサーション関数群。
+/// The assertions the macros call, plus the catalog and gallery generators.
 public enum VisualTesting {
 
-    /// 全スナップショットに適用するテーマアプリケーター。
+    /// How every snapshot gets its light or dark appearance.
     ///
-    /// カスタムテーマシステムを使う場合はテストターゲット内でここへ設定する。
+    /// This is process-wide state. A test target with a custom theme system assigns to it once
+    /// during setup; every suite in that process then captures through it.
     @MainActor
     public static var themeApplicable: any ThemeApplicable = DefaultThemeApplicable()
 
-    /// デバイス × テーマ × ロケールのマトリクス全体で View スナップショットをアサートする。
+    /// Captures a view once per combination in the configured matrix, recording one issue per mismatch.
     ///
-    /// `@SnapshotSuite` から生成された `@Test` メソッドが呼び出す。
-    /// 出力先: `__Snapshots__/{viewName}/{device}/{stateName}.{theme}_{locale}.png`
+    /// Reached from the suite's hand-written runner by way of `SnapshotCase.run()`.
+    /// Writes to `__Snapshots__/{viewName}/{device}/{stateName}.{theme}_{locale}.png`.
     @MainActor
     public static func assertViewSnapshot<V: View>(
         of view: V,
@@ -91,10 +92,10 @@ public enum VisualTesting {
         }
     }
 
-    /// テーマ軸のみでコンポーネントスナップショットをアサートする。
+    /// Captures a component once per theme, with no device frame and no locale variation.
     ///
-    /// デバイスフレームは使用しない。
-    /// 出力先: `__Snapshots__/{componentName}/{stateName}.{theme}.png`
+    /// Without an explicit `size` the view's intrinsic size is used, capped at 393×852.
+    /// Writes to `__Snapshots__/{componentName}/{stateName}.{theme}.png`.
     @MainActor
     public static func assertComponentSnapshot<V: View>(
         of view: V,
@@ -161,10 +162,10 @@ public enum VisualTesting {
 
     // MARK: - Private Helpers
 
-    /// 参照画像の名前。
+    /// The reference image's name.
     ///
-    /// **既定の文字サイズでは名前に何も足さない。** 足すと 2.0 系で撮った参照画像が
-    /// 全部行方不明になり、この軸を使っていないスイートまで撮り直しになる。
+    /// **Nothing is appended at the default text size.** Appending would leave every reference image
+    /// recorded under 2.0 unreachable, forcing a re-record even in suites that never use this axis.
     private static func snapshotName(
         theme: SnapshotTheme,
         locale: String,
@@ -196,7 +197,7 @@ public enum VisualTesting {
         return hostingController
     }
 
-    /// デバイスサブディレクトリ付きのスナップショットディレクトリを返す: `{testFileDir}/__Snapshots__/{viewName}/{device}`
+    /// Resolves `{testFileDir}/__Snapshots__/{viewName}/{device}` — beside the file that called in.
     private static func snapshotDirectory(file: StaticString, viewName: String, device: SnapshotDevice) -> String {
         let fileURL = URL(fileURLWithPath: "\(file)")
         return fileURL
@@ -207,7 +208,7 @@ public enum VisualTesting {
             .path
     }
 
-    /// デバイスなしのスナップショットディレクトリを返す: `{testFileDir}/__Snapshots__/{viewName}`
+    /// Resolves `{testFileDir}/__Snapshots__/{viewName}` — the component layout, with no device level.
     private static func snapshotDirectory(file: StaticString, viewName: String) -> String {
         let fileURL = URL(fileURLWithPath: "\(file)")
         return fileURL
