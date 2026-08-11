@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [3.0.1] - 2026-08-11
+
 ### Changed
 
 - The documented way to re-record was `SNAPSHOT_TESTING_RECORD=all`, which is the slowest mode and
