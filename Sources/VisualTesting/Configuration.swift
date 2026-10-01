@@ -9,6 +9,11 @@ import SnapshotTesting
 public enum SnapshotDevice: String, CaseIterable, Sendable {
     case iPhone16 = "iPhone16"
     case iPhoneSE = "iPhoneSE"
+    /// The largest iPhone screen (iPhone 16 Pro Max and iPhone 17 Pro Max, 440×956).
+    ///
+    /// Not in ``SnapshotConfiguration/standardDevices``. It is the widest compact width an iPhone
+    /// has, which is where a layout tuned on a 393pt screen starts leaving gaps or stretching rows.
+    case iPhoneProMax = "iPhoneProMax"
     case iPadPro11 = "iPadPro11"
     /// A window about half the landscape width of an iPad Pro 11 (half of 1194pt).
     case iPadPro11Half = "iPadPro11Half"
@@ -89,6 +94,12 @@ public enum SnapshotDevice: String, CaseIterable, Sendable {
                 safeArea: UIEdgeInsets(top: 20, left: 0, bottom: 0, right: 0),
                 displayScale: 2
             )
+        case .iPhoneProMax:
+            Geometry(
+                size: CGSize(width: 440, height: 956),
+                safeArea: UIEdgeInsets(top: 62, left: 0, bottom: 34, right: 0),
+                displayScale: 3
+            )
         case .iPadPro11:
             Geometry(
                 size: CGSize(width: 834, height: 1194),
@@ -165,6 +176,24 @@ public enum SnapshotTheme: String, CaseIterable, Sendable {
     }
 }
 
+// MARK: - SnapshotOutput
+
+/// Where a capture is written, and whether it is compared against anything.
+public enum SnapshotOutput: Sendable, Equatable {
+    /// Reference images in `__Snapshots__` beside the test file, compared on every run.
+    ///
+    /// swift-snapshot-testing's record mode decides what happens to a missing or differing image.
+    case references
+    /// Every image is written under `directory` on every run, and nothing is compared.
+    ///
+    /// For a catalog of screens that is looked at rather than asserted on: images that are not
+    /// committed, rebuilt each run, and browsed through the gallery. The layout under `directory` is
+    /// the one `__Snapshots__` has — `{view}/{device}/{state}.{theme}_{locale}.png` beside a
+    /// `manifest.json` — so `generateCatalog(rootDirectory:outputPath:)` reads it unchanged.
+    /// A capture that cannot be rendered or written is still recorded as an issue.
+    case capture(directory: String)
+}
+
 // MARK: - SnapshotConfiguration
 
 /// The matrix a suite captures: every device × theme × locale × text size combination is one image.
@@ -184,6 +213,8 @@ public struct SnapshotConfiguration: Sendable {
     public var precision: Float
     /// How close each pixel's colour has to be, 0 to 1. Below 1 it absorbs anti-aliasing drift.
     public var perceptualPrecision: Float
+    /// Where images go and whether they are compared. Defaults to reference images beside the test.
+    public var output: SnapshotOutput
 
     public init(
         devices: [SnapshotDevice] = SnapshotConfiguration.standardDevices,
@@ -191,7 +222,8 @@ public struct SnapshotConfiguration: Sendable {
         locales: [String] = ["en", "ja"],
         dynamicTypes: [SnapshotDynamicType] = [.standard],
         precision: Float = 0.99,
-        perceptualPrecision: Float = 0.98
+        perceptualPrecision: Float = 0.98,
+        output: SnapshotOutput = .references
     ) {
         self.devices = devices
         self.themes = themes
@@ -199,6 +231,7 @@ public struct SnapshotConfiguration: Sendable {
         self.dynamicTypes = dynamicTypes
         self.precision = precision
         self.perceptualPrecision = perceptualPrecision
+        self.output = output
     }
 
     /// The devices captured unless a suite says otherwise.

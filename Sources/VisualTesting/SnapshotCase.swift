@@ -28,7 +28,10 @@ public struct SnapshotCase: Sendable, CustomTestStringConvertible {
     public enum Kind: Sendable {
         /// A full-screen view, captured across the device × theme × locale matrix.
         case view(inNavigation: Bool, disableAnimations: Bool)
-        /// A component, captured on the theme axis alone; a nil dimension falls back to intrinsic size.
+        /// A component, captured on the theme axis alone.
+        ///
+        /// Both dimensions fix the size. A width alone lays the component out at that width and lets it
+        /// take the height it needs. Neither falls back to the intrinsic size.
         case component(width: CGFloat?, height: CGFloat?, disableAnimations: Bool)
     }
 
@@ -84,6 +87,7 @@ public struct SnapshotCase: Sendable, CustomTestStringConvertible {
                 componentName: viewName,
                 stateName: stateName,
                 size: size,
+                fittingWidth: height == nil ? width : nil,
                 disableAnimations: disableAnimations,
                 configuration: configuration,
                 file: file,

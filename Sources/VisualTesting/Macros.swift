@@ -37,7 +37,8 @@ public macro Snapshot() =
 
 /// Marks a function as a component to capture on the theme axis alone, at a fixed size.
 ///
-/// No device frame and no locale variation. Omitting the size falls back to the view's intrinsic size.
+/// No device frame and no locale variation. A width alone lays the component out at that width and
+/// lets it take whatever height it needs; omitting the size falls back to the view's intrinsic size.
 ///
 /// ```swift
 /// @ComponentSnapshot(width: 340, height: 120)

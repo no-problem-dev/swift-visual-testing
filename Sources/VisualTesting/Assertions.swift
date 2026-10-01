@@ -40,8 +40,10 @@ public enum VisualTesting {
             AnyView(view)
         }
 
+        let root = snapshotRoot(file: file, output: configuration.output)
+
         for device in configuration.devices {
-            let dir = snapshotDirectory(file: file, viewName: viewName, device: device)
+            let dir = root.appendingPathComponent(viewName).appendingPathComponent(device.rawValue).path
 
             for theme in configuration.themes {
                 for locale in configuration.locales {
@@ -55,17 +57,18 @@ public enum VisualTesting {
                         )
                         let snapshotName = snapshotName(theme: theme, locale: locale, dynamicType: dynamicType)
 
-                        let failure = verifySnapshot(
-                            of: vc,
+                        let failure = snapshot(
+                            vc,
                             as: .image(
                                 on: device.config(theme: theme, dynamicType: dynamicType),
                                 precision: configuration.precision,
                                 perceptualPrecision: configuration.perceptualPrecision
                             ),
                             named: snapshotName,
-                            snapshotDirectory: dir,
+                            directory: dir,
+                            stateName: stateName,
+                            output: configuration.output,
                             file: file,
-                            testName: stateName,
                             line: line
                         )
                         if let message = failure {
@@ -87,14 +90,17 @@ public enum VisualTesting {
                 dynamicTypes: configuration.dynamicTypes,
                 inNavigation: inNavigation,
                 disableAnimations: disableAnimations,
-                file: file
+                root: root
             )
         }
     }
 
     /// Captures a component once per theme, with no device frame and no locale variation.
     ///
-    /// Without an explicit `size` the view's intrinsic size is used, capped at 393×852.
+    /// With `size` the component is laid out at exactly that size. With `fittingWidth` and no `size`
+    /// it is laid out at that width and takes the height it needs, however tall — the whole of a
+    /// scrolling screen's content, for instance. With neither, the view's intrinsic size is used,
+    /// capped at 393×852.
     /// Writes to `__Snapshots__/{componentName}/{stateName}.{theme}.png`.
     @MainActor
     public static func assertComponentSnapshot<V: View>(
@@ -102,6 +108,7 @@ public enum VisualTesting {
         componentName: String,
         stateName: String,
         size: CGSize?,
+        fittingWidth: CGFloat? = nil,
         disableAnimations: Bool,
         configuration: SnapshotConfiguration = .default,
         file: StaticString,
@@ -110,7 +117,8 @@ public enum VisualTesting {
         if disableAnimations { UIView.setAnimationsEnabled(false) }
         defer { if disableAnimations { UIView.setAnimationsEnabled(true) } }
 
-        let dir = snapshotDirectory(file: file, viewName: componentName)
+        let root = snapshotRoot(file: file, output: configuration.output)
+        let dir = root.appendingPathComponent(componentName).path
 
         for theme in configuration.themes {
             let themed = themeApplicable.applyTheme(view, theme: theme)
@@ -118,6 +126,9 @@ public enum VisualTesting {
             let vc = UIHostingController(rootView: themed)
             if let size {
                 vc.view.frame = CGRect(origin: .zero, size: size)
+            } else if let fittingWidth {
+                let fitting = vc.sizeThatFits(in: CGSize(width: fittingWidth, height: .greatestFiniteMagnitude))
+                vc.view.frame = CGRect(origin: .zero, size: CGSize(width: fittingWidth, height: ceil(fitting.height)))
             } else {
                 let fittingSize = vc.view.intrinsicContentSize
                 vc.view.frame = CGRect(
@@ -132,17 +143,18 @@ public enum VisualTesting {
 
             let snapshotName = "\(theme.rawValue)"
 
-            let failure = verifySnapshot(
-                of: vc,
+            let failure = snapshot(
+                vc,
                 as: .image(
                     precision: configuration.precision,
                     perceptualPrecision: configuration.perceptualPrecision,
                     traits: UITraitCollection(userInterfaceStyle: theme.userInterfaceStyle)
                 ),
                 named: snapshotName,
-                snapshotDirectory: dir,
+                directory: dir,
+                stateName: stateName,
+                output: configuration.output,
                 file: file,
-                testName: stateName,
                 line: line
             )
             if let message = failure {
@@ -161,7 +173,7 @@ public enum VisualTesting {
             locales: [],
             inNavigation: false,
             disableAnimations: disableAnimations,
-            file: file
+            root: root
         )
     }
 
@@ -199,25 +211,74 @@ public enum VisualTesting {
         return hostingController
     }
 
-    /// Resolves `{testFileDir}/__Snapshots__/{viewName}/{device}` — beside the file that called in.
-    private static func snapshotDirectory(file: StaticString, viewName: String, device: SnapshotDevice) -> String {
-        let fileURL = URL(fileURLWithPath: "\(file)")
-        return fileURL
-            .deletingLastPathComponent()
-            .appendingPathComponent("__Snapshots__")
-            .appendingPathComponent(viewName)
-            .appendingPathComponent(device.rawValue)
-            .path
+    /// The directory every view and component directory sits in.
+    ///
+    /// For reference images that is `{testFileDir}/__Snapshots__`, beside the file that called in;
+    /// for a capture it is the directory the configuration names.
+    static func snapshotRoot(file: StaticString, output: SnapshotOutput) -> URL {
+        switch output {
+        case .references:
+            URL(fileURLWithPath: "\(file)")
+                .deletingLastPathComponent()
+                .appendingPathComponent("__Snapshots__")
+        case .capture(let directory):
+            URL(fileURLWithPath: directory, isDirectory: true)
+        }
     }
 
-    /// Resolves `{testFileDir}/__Snapshots__/{viewName}` — the component layout, with no device level.
-    private static func snapshotDirectory(file: StaticString, viewName: String) -> String {
-        let fileURL = URL(fileURLWithPath: "\(file)")
-        return fileURL
-            .deletingLastPathComponent()
-            .appendingPathComponent("__Snapshots__")
-            .appendingPathComponent(viewName)
-            .path
+    /// Compares against the reference image, or — for a capture — renders and writes without comparing.
+    ///
+    /// Returns the failure message to record, or `nil`. A capture fails only when the image could not
+    /// be rendered or written; swift-snapshot-testing would report every write as a failure, which is
+    /// right for a reference and wrong for a catalog that is rewritten on purpose each run.
+    @MainActor
+    private static func snapshot(
+        _ viewController: UIViewController,
+        as strategy: Snapshotting<UIViewController, UIImage>,
+        named name: String,
+        directory: String,
+        stateName: String,
+        output: SnapshotOutput,
+        file: StaticString,
+        line: UInt
+    ) -> String? {
+        guard case .capture = output else {
+            return verifySnapshot(
+                of: viewController,
+                as: strategy,
+                named: name,
+                snapshotDirectory: directory,
+                file: file,
+                testName: stateName,
+                line: line
+            )
+        }
+
+        var image: UIImage?
+        strategy.snapshot(viewController).run { image = $0 }
+        let deadline = Date().addingTimeInterval(captureTimeout)
+        while image == nil, Date() < deadline {
+            RunLoop.main.run(mode: .default, before: Date().addingTimeInterval(0.01))
+        }
+        guard let image else {
+            return "Exceeded \(Int(captureTimeout)) seconds waiting for the view to render."
+        }
+
+        let url = URL(fileURLWithPath: directory, isDirectory: true)
+            .appendingPathComponent("\(stateName).\(name).png")
+        do {
+            try FileManager.default.createDirectory(
+                at: url.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            try strategy.diffing.toData(image).write(to: url)
+        } catch {
+            return String(describing: VisualTestingError.writeFailed(path: url.path, underlying: error))
+        }
+        return nil
     }
+
+    /// How long a capture waits for its image, the same default swift-snapshot-testing uses.
+    private static let captureTimeout: TimeInterval = 5
 }
 #endif

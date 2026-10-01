@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **`SnapshotOutput.capture(directory:)`, a catalog that is looked at rather than asserted on.**
+  Set as `SnapshotConfiguration.output`, every image is written under that directory on every run
+  and nothing is compared. A screen catalog whose images are not committed — rebuilt each run and
+  browsed through the gallery — had no way to run green: swift-snapshot-testing reports every write
+  it makes as a failure, so the first run of such a catalog failed on every image, and so did every
+  run after the directory was cleared. The layout under the directory is the one `__Snapshots__`
+  has, `manifest.json` included, so `generateCatalog(rootDirectory:outputPath:)` reads it as is.
+  An image that cannot be rendered or written is still recorded as an issue. The default stays
+  `.references`.
+- **`SnapshotDevice.iPhoneProMax`** (440×956, the 16 Pro Max and 17 Pro Max). It is the widest
+  compact width an iPhone has, where a layout tuned at 393pt starts leaving gaps. It is not added to
+  `standardDevices`, so no existing suite gains images.
+
+### Fixed
+
+- **A `@ComponentSnapshot` with a width and no height ignored the width.** The size was used only
+  when both were given, so `@ComponentSnapshot(width: 393)` was captured at its intrinsic size and
+  cut off at 852pt. A width alone now lays the component out at that width and lets it take the
+  height it needs, with no cap — which is what capturing the whole of a scrolling screen's content
+  needs. A component given both dimensions, or neither, is captured as before.
+
 ## [3.0.1] - 2026-08-11
 
 ### Changed

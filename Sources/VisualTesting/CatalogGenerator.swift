@@ -6,7 +6,7 @@ extension VisualTesting {
 
     // MARK: - Per-View Manifest Update
 
-    /// Folds this assertion's entries into `__Snapshots__/{viewName}/manifest.json`.
+    /// Folds this assertion's entries into `{root}/{viewName}/manifest.json`.
     ///
     /// Read-modify-write per call, so a suite spread over several assertions accumulates rather than
     /// overwrites. Entries already present under the same file path are left alone.
@@ -23,13 +23,9 @@ extension VisualTesting {
         dynamicTypes: [SnapshotDynamicType] = [.standard],
         inNavigation: Bool,
         disableAnimations: Bool,
-        file: StaticString
+        root: URL
     ) {
-        let fileURL = URL(fileURLWithPath: "\(file)")
-        let viewDir = fileURL
-            .deletingLastPathComponent()
-            .appendingPathComponent("__Snapshots__")
-            .appendingPathComponent(viewName)
+        let viewDir = root.appendingPathComponent(viewName)
         let manifestURL = viewDir.appendingPathComponent("manifest.json")
 
         // Read existing manifest, or start one for a suite captured for the first time.
