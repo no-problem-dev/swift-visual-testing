@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [3.0.2] - 2026-10-01
+
 ### Added
 
 - **`SnapshotOutput.capture(directory:)`, a catalog that is looked at rather than asserted on.**
