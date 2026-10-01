@@ -28,10 +28,13 @@ public enum SnapshotDevice: String, CaseIterable, Sendable {
 
     /// The pixel density this device stands for, put on the capture as a trait.
     ///
-    /// It does not decide the size of the PNG. Measured on an iPhone 17 simulator, an `iPadPro11`
-    /// capture comes out 2502×3582 — 834×1194 at **3×**, the host simulator's screen scale, not the
-    /// 2× declared here. Reference images are therefore only comparable across machines running the
-    /// same simulator.
+    /// For a reference image it does not decide the size of the PNG. Measured on an iPhone 17
+    /// simulator, an `iPadPro11` reference comes out 2502×3582 — 834×1194 at **3×**, the host
+    /// simulator's screen scale, not the 2× declared here. Reference images are therefore only
+    /// comparable across machines running the same simulator.
+    ///
+    /// A capture (``SnapshotOutput/capture(directory:)``) does render at this scale, so an
+    /// `iPhoneSE` capture is 750×1334 on any simulator.
     public var displayScale: CGFloat { geometry.displayScale }
 
     /// The geometry, appearance, and text size the view is rendered under.

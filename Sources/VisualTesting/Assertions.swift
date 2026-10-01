@@ -56,11 +56,13 @@ public enum VisualTesting {
                             dynamicType: dynamicType
                         )
                         let snapshotName = snapshotName(theme: theme, locale: locale, dynamicType: dynamicType)
+                        let config = device.config(theme: theme, dynamicType: dynamicType)
 
                         let failure = snapshot(
                             vc,
+                            capture: { CaptureRenderer.image(of: vc, config: config, fittingWidth: nil) },
                             as: .image(
-                                on: device.config(theme: theme, dynamicType: dynamicType),
+                                on: config,
                                 precision: configuration.precision,
                                 perceptualPrecision: configuration.perceptualPrecision
                             ),
@@ -143,8 +145,14 @@ public enum VisualTesting {
 
             let snapshotName = "\(theme.rawValue)"
 
+            let captureConfig = ViewImageConfig(
+                safeArea: .zero,
+                size: fittingWidth != nil && size == nil ? nil : vc.view.frame.size,
+                traits: UITraitCollection(userInterfaceStyle: theme.userInterfaceStyle)
+            )
             let failure = snapshot(
                 vc,
+                capture: { CaptureRenderer.image(of: vc, config: captureConfig, fittingWidth: size == nil ? fittingWidth : nil) },
                 as: .image(
                     precision: configuration.precision,
                     perceptualPrecision: configuration.perceptualPrecision,
@@ -226,7 +234,8 @@ public enum VisualTesting {
         }
     }
 
-    /// Compares against the reference image, or — for a capture — renders and writes without comparing.
+    /// Compares against the reference image, or — for a capture — renders through ``CaptureRenderer``
+    /// and writes without comparing.
     ///
     /// Returns the failure message to record, or `nil`. A capture fails only when the image could not
     /// be rendered or written; swift-snapshot-testing would report every write as a failure, which is
@@ -234,6 +243,7 @@ public enum VisualTesting {
     @MainActor
     private static func snapshot(
         _ viewController: UIViewController,
+        capture: () -> UIImage,
         as strategy: Snapshotting<UIViewController, UIImage>,
         named name: String,
         directory: String,
@@ -254,15 +264,7 @@ public enum VisualTesting {
             )
         }
 
-        var image: UIImage?
-        strategy.snapshot(viewController).run { image = $0 }
-        let deadline = Date().addingTimeInterval(captureTimeout)
-        while image == nil, Date() < deadline {
-            RunLoop.main.run(mode: .default, before: Date().addingTimeInterval(0.01))
-        }
-        guard let image else {
-            return "Exceeded \(Int(captureTimeout)) seconds waiting for the view to render."
-        }
+        let image = capture()
 
         let url = URL(fileURLWithPath: directory, isDirectory: true)
             .appendingPathComponent("\(stateName).\(name).png")
@@ -277,8 +279,5 @@ public enum VisualTesting {
         }
         return nil
     }
-
-    /// How long a capture waits for its image, the same default swift-snapshot-testing uses.
-    private static let captureTimeout: TimeInterval = 5
 }
 #endif

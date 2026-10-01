@@ -8,6 +8,12 @@ extension VisualTesting {
     /// The catalog JSON, the CSS, and the JavaScript are all inlined, so the page opens over `file://`
     /// with no server. Image `src` values stay relative, so the file has to sit at the catalog root.
     ///
+    /// Two optional files beside it, written by whatever runs after the capture, are picked up:
+    /// - `thumbs/{path}.jpg` for each `{path}.png`: the grid shows these and the lightbox the PNG.
+    ///   A card whose thumbnail is missing falls back to the PNG.
+    /// - `issues.js`, setting `window.SNAPSHOT_ISSUES` to `{ "<image path>": ["<problem>", …] }`:
+    ///   those cards get a red outline and their problems, and an "Issues only" filter appears.
+    ///
     /// - Parameters:
     ///   - catalog: The catalog to render.
     ///   - outputPath: Where the HTML file is written.
@@ -55,6 +61,7 @@ extension VisualTesting {
           <div class="stat"><span class="stat-num">\(s.totalViews)</span><span class="stat-label">Views</span></div>
           <div class="stat"><span class="stat-num">\(s.totalComponents)</span><span class="stat-label">Components</span></div>
           <div class="stat"><span class="stat-num">\(deviceCount)</span><span class="stat-label">Devices</span></div>
+          <div class="stat stat-issues" id="issue-stat" hidden><span class="stat-num" id="issue-count">0</span><span class="stat-label">Issues</span></div>
         </header>
 
         <!-- Filter Bar -->
@@ -77,6 +84,7 @@ extension VisualTesting {
           </div>
           <div class="filter-row filter-row-actions">
             <input id="search" type="text" placeholder="Search views…" autocomplete="off">
+            <button id="issues-btn" class="action-btn" title="Show only images flagged by issues.js" hidden>Issues only</button>
             <button id="compare-btn" class="action-btn" title="Compare light vs dark">Compare</button>
             <button id="dark-mode-btn" class="action-btn" title="Toggle gallery dark mode">☀︎</button>
           </div>
@@ -97,6 +105,7 @@ extension VisualTesting {
           </div>
         </div>
 
+        <script src="issues.js"></script>
         <script>
         const CATALOG = \(catalogJSON);
         \(jsBlock)
@@ -300,6 +309,9 @@ extension VisualTesting {
       word-break: break-all;
     }
     .hidden-section { display: none; }
+    .stat-issues .stat-num { color: #d70015; }
+    .card.issue { outline: 3px solid #d70015; outline-offset: -3px; }
+    .card-info .issue-text { color: #d70015; font-weight: 600; }
     """ }
 
     // MARK: - JavaScript
@@ -315,6 +327,9 @@ extension VisualTesting {
       let activeLocales = new Set(CATALOG.configuration.locales);
       let searchQuery = '';
       let compareMode = false;
+      let issuesOnly = false;
+      const ISSUES = window.SNAPSHOT_ISSUES || {};
+      const issueCount = Object.keys(ISSUES).length;
       let darkMode = false;
       let lightboxImages = [];
       let lightboxIndex = 0;
@@ -392,6 +407,7 @@ extension VisualTesting {
           if (!activeThemes.has(img.theme)) return false;
           if (img.locale && activeLocales.size > 0 && !activeLocales.has(img.locale)) return false;
           if (searchQuery && !img.viewName.toLowerCase().includes(searchQuery)) return false;
+          if (issuesOnly && !ISSUES[img.src]) return false;
           return true;
         });
       }
@@ -458,13 +474,11 @@ extension VisualTesting {
               const el = document.createElement('div');
               el.className = 'compare-pair';
               const lightImg = document.createElement('img');
-              lightImg.src = pair.light.src;
-              lightImg.loading = 'lazy';
+              setThumbnail(lightImg, pair.light.src);
               lightImg.alt = pair.light.viewName + ' light';
               lightImg.onclick = () => openLightbox(pair.light);
               const darkImg = document.createElement('img');
-              darkImg.src = pair.dark.src;
-              darkImg.loading = 'lazy';
+              setThumbnail(darkImg, pair.dark.src);
               darkImg.alt = pair.dark.viewName + ' dark';
               darkImg.onclick = () => openLightbox(pair.dark);
               el.appendChild(lightImg);
@@ -486,17 +500,18 @@ extension VisualTesting {
               card.className = 'card';
               card.onclick = () => openLightbox(img);
               const imgEl = document.createElement('img');
-              imgEl.src = img.src;
-              imgEl.loading = 'lazy';
+              setThumbnail(imgEl, img.src);
               imgEl.alt = img.viewName + ' ' + img.stateName;
               card.appendChild(imgEl);
+              if (ISSUES[img.src]) card.classList.add('issue');
               const info = document.createElement('div');
               info.className = 'card-info';
               info.innerHTML = '<div class="name">' + esc(img.viewName) + '</div>'
                 + esc(img.stateName)
                 + (img.device !== 'default' ? ' · ' + img.device : '')
                 + ' · ' + img.theme
-                + (img.locale ? ' · ' + img.locale : '');
+                + (img.locale ? ' · ' + img.locale : '')
+                + (ISSUES[img.src] ? '<div class="issue-text">' + esc(ISSUES[img.src].join(' / ')) + '</div>' : '');
               card.appendChild(info);
               grid.appendChild(card);
             }
@@ -504,6 +519,14 @@ extension VisualTesting {
           }
           gallery.appendChild(section);
         }
+      }
+
+      // A JPEG under thumbs/ keeps a thousand cards light enough to load; without one, the full PNG.
+      function setThumbnail(el, src) {
+        el.loading = 'lazy';
+        el.decoding = 'async';
+        el.onerror = () => { el.onerror = null; el.src = src; };
+        el.src = 'thumbs/' + src.replace(/\.png$/, '.jpg');
       }
 
       function esc(s) {
@@ -564,6 +587,19 @@ extension VisualTesting {
         searchQuery = e.target.value.toLowerCase().trim();
         render();
       });
+
+      // --- Issues ---
+      if (issueCount > 0) {
+        document.getElementById('issue-stat').hidden = false;
+        document.getElementById('issue-count').textContent = issueCount;
+        const issuesBtn = document.getElementById('issues-btn');
+        issuesBtn.hidden = false;
+        issuesBtn.addEventListener('click', () => {
+          issuesOnly = !issuesOnly;
+          issuesBtn.classList.toggle('active', issuesOnly);
+          render();
+        });
+      }
 
       // --- Compare ---
       document.getElementById('compare-btn').addEventListener('click', () => {

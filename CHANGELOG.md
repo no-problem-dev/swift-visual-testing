@@ -21,8 +21,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **`SnapshotDevice.iPhoneProMax`** (440×956, the 16 Pro Max and 17 Pro Max). It is the widest
   compact width an iPhone has, where a layout tuned at 393pt starts leaving gaps. It is not added to
   `standardDevices`, so no existing suite gains images.
+- **The gallery reads two optional sidecars.** `thumbs/{path}.jpg` is shown in the grid in place of
+  each PNG (the lightbox keeps the PNG), so a page of a thousand full-resolution PNGs (200 MB)
+  no longer has to decode them all to scroll. `issues.js` (`window.SNAPSHOT_ISSUES`, image path → problems)
+  outlines the flagged cards, prints their problems, and adds an "Issues only" filter. Both are
+  written by whatever checks the images after the capture; without them the page is as before.
 
 ### Fixed
+
+- **A capture drew Liquid Glass wrong or not at all.** A test bundle without a host app renders with
+  `CALayer.render(in:)`, which skips Core Animation filters and backdrops. A toolbar symbol came out
+  white on a light screen (its `vibrantColorMatrix` is what darkens it) and the glass behind it was
+  missing. A capture now goes through its own renderer: the controller sits in a window and the run
+  loop turns before drawing (switches and segmented controls are platform views and appear only
+  then), a fitting height is measured in the window, each layer under a `vibrantColorMatrix` is
+  drawn on top in the label color, and each glass shape gets a flat fill and a hairline. Reference
+  comparison (`.references`) still goes through swift-snapshot-testing unchanged. A capture is now
+  drawn at the device's own `displayScale`, so `iPhoneSE` comes out 750×1334 rather than at the host
+  simulator's 3×.
 
 - **A `@ComponentSnapshot` with a width and no height ignored the width.** The size was used only
   when both were given, so `@ComponentSnapshot(width: 393)` was captured at its intrinsic size and
