@@ -47,7 +47,7 @@ compile error that names the exact line to add.
 
 ## Documentation
 
-[Getting Started and the full API reference](https://no-problem-dev.github.io/swift-visual-testing/documentation/visualtesting/)
+[Getting Started and the full API reference](Sources/VisualTesting/Documentation.docc)
 cover component snapshots, custom theme systems, changing the matrix, recording reference images, and
 generating the HTML gallery.
 

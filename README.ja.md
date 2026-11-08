@@ -47,7 +47,7 @@ struct SettingsViewSnapshots {
 
 ## ドキュメント
 
-[Getting Started と API リファレンス](https://no-problem-dev.github.io/swift-visual-testing/documentation/visualtesting/)
+[Getting Started と API リファレンス](Sources/VisualTesting/Documentation.docc)
 に、コンポーネントスナップショット・カスタムテーマ機構・マトリクスの変更・参照画像の記録・
 HTML ギャラリーの生成をまとめてある。
 
